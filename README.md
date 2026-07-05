@@ -4,7 +4,7 @@ Gazetteer is an interactive React map application for exploring countries and re
 
 ## Features
 
-- Full-screen React Leaflet map with street and satellite MapTiler layers
+- Full-screen React Leaflet map with street and satellite layers
 - GeoNames-backed country, state, and county search
 - Place details from Rest Countries
 - Weather and 3-day forecast from WeatherAPI
@@ -48,11 +48,11 @@ src/
 server/         Express API proxy for third-party services
 ```
 
-The browser talks to `/api/*`. The Express server owns third-party API credentials and normalizes responses before they reach React. MapTiler tile requests still need a public browser tile key, but the key is configured through the backend instead of being hard-coded in source.
+The browser talks to `/api/*`. The Express server owns third-party API credentials and normalizes responses before they reach React. Map tiles use public OpenStreetMap and Esri endpoints, so a tile-provider key is not required for local development.
 
 ## APIs Used
 
-- MapTiler for map tiles
+- OpenStreetMap and Esri for map tiles
 - GeoNames for search and landmarks
 - Rest Countries for country metadata
 - WeatherAPI for current weather and forecast data
@@ -74,7 +74,7 @@ The browser talks to `/api/*`. The Express server owns third-party API credentia
    cp .env.example .env
    ```
 
-3. Fill in `MAPTILER_KEY`, `GEONAMES_USER`, and `WEATHER_API_KEY`.
+3. Fill in `GEONAMES_USER` and `WEATHER_API_KEY`.
 
 4. Run the frontend and backend:
 
@@ -90,7 +90,6 @@ The browser talks to `/api/*`. The Express server owns third-party API credentia
 | --- | --- | --- |
 | `PORT` | No | Express server port. Defaults to `3001`. |
 | `CLIENT_ORIGIN` | No | Allowed CORS origin. Defaults to `http://localhost:5173`. |
-| `MAPTILER_KEY` | Yes | MapTiler browser tile key served by `/api/config`. |
 | `GEONAMES_USER` | Yes | GeoNames username for search and landmark lookups. |
 | `WEATHER_API_KEY` | Yes | WeatherAPI key, used only by the backend. |
 
@@ -132,7 +131,7 @@ Build the frontend with `npm run build` and deploy `dist/` to a static host. Dep
 
 ## Acknowledgements
 
-This project uses public data from GeoNames, Rest Countries, USGS, MapTiler, WeatherAPI, open.er-api.com, and the mwgg Airports dataset.
+This project uses public data from GeoNames, Rest Countries, USGS, OpenStreetMap, Esri, WeatherAPI, open.er-api.com, and the mwgg Airports dataset.
 
 ## License
 

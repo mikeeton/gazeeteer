@@ -3,6 +3,22 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('leaflet') || id.includes('react-leaflet')) return 'maps';
+          if (id.includes('@tanstack') || id.includes('axios') || id.includes('zustand')) return 'query';
+          if (id.includes('framer-motion') || id.includes('recharts') || id.includes('lucide-react')) {
+            return 'visuals';
+          }
+          if (id.includes('react')) return 'react';
+          return 'vendor';
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

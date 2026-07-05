@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Banknote, CalendarDays, CloudSun, Globe2, Loader2, X } from 'lucide-react';
+import { Banknote, CloudSun, Globe2, Loader2, X } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { getCountryInfo, getCurrencyInfo, getWeather } from '../api/gazetteerApi';
@@ -88,7 +88,7 @@ function PlaceDetails() {
   if (isError || !data) return <ErrorState label="Country information could not be loaded." />;
 
   const currency = data.currencies[0];
-  const rows = [
+  const rows: Array<[string, string]> = [
     ['Official name', data.official],
     ['Feature', featureTypes[selectedPlace.fcode] ?? selectedPlace.fcode],
     ['Capital', data.capital || 'Not available'],

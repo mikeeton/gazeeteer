@@ -19,10 +19,6 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/config', (_req, res) => {
-  res.json({ maptilerKey: process.env.MAPTILER_KEY ?? '' });
-});
-
 app.get('/api/places', async (req, res) => {
   const q = String(req.query.q ?? '').trim();
   if (q.length < 2) return res.json({ geonames: [] });

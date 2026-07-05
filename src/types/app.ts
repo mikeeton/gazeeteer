@@ -17,10 +17,6 @@ export type OverlayKey = 'airports' | 'earthquakes' | 'landmarks';
 
 export type DetailMode = 'place' | 'currency' | 'weather' | 'forecast';
 
-export type AppConfig = {
-  maptilerKey: string;
-};
-
 export type CountryInfo = {
   name: string;
   official: string;

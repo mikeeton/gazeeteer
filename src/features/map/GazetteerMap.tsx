@@ -4,9 +4,9 @@ import { useEffect, useMemo } from 'react';
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import toast from 'react-hot-toast';
 
-import { getAirports, getConfig, getEarthquakes, getLandmarks } from '../../api/gazetteerApi';
+import { getAirports, getEarthquakes, getLandmarks } from '../../api/gazetteerApi';
 import { useAppStore } from '../../store/appStore';
-import type { Airport, EarthquakeFeature, Landmark, PlaceSuggestion } from '../../types/app';
+import type { Airport, EarthquakeFeature, PlaceSuggestion } from '../../types/app';
 import { haversineKm } from '../../utils/geo';
 
 const defaultCenter: [number, number] = [20, 0];
@@ -27,7 +27,6 @@ const landmarkIcon = L.divIcon({
 
 export function GazetteerMap() {
   const { selectedPlace, mapMode, overlays } = useAppStore();
-  const { data: config } = useQuery({ queryKey: ['config'], queryFn: getConfig });
   const { data: airports = [], isError: airportsError } = useQuery({
     queryKey: ['airports'],
     queryFn: getAirports,
@@ -55,10 +54,18 @@ export function GazetteerMap() {
   const visibleAirports = useMemo(() => filterAirports(airports, selectedPlace), [airports, selectedPlace]);
   const visibleQuakes = useMemo(() => filterEarthquakes(earthquakes, selectedPlace), [earthquakes, selectedPlace]);
 
-  const tileUrl =
+  const tileLayer =
     mapMode === 'satellite'
-      ? `https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=${config?.maptilerKey ?? ''}`
-      : `https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${config?.maptilerKey ?? ''}`;
+      ? {
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          attribution:
+            'Tiles &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+        }
+      : {
+          url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        };
 
   return (
     <MapContainer
@@ -75,8 +82,8 @@ export function GazetteerMap() {
       zoom={3}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.maptiler.com/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url={tileUrl}
+        attribution={tileLayer.attribution}
+        url={tileLayer.url}
       />
       <MapFocus place={selectedPlace} />
       {selectedPlace ? (

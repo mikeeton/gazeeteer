@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { apiClient } from './client';
 import type {
   Airport,
-  AppConfig,
   CountryInfo,
   CurrencyInfo,
   EarthquakeFeature,
@@ -22,11 +21,6 @@ const suggestionSchema = z.object({
   geonameId: z.number().nullable(),
   wikipediaUrl: z.string().default(''),
 });
-
-export async function getConfig(): Promise<AppConfig> {
-  const { data } = await apiClient.get<AppConfig>('/config');
-  return data;
-}
 
 export async function searchPlaces(query: string): Promise<PlaceSuggestion[]> {
   const { data } = await apiClient.get('/places', { params: { q: query } });

@@ -11,7 +11,7 @@ import {
   Plane,
   Satellite,
   Waves,
-  Wikipedia,
+  BookOpenText,
   type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -130,7 +130,7 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
             Forecast
           </button>
           <button className={buttonClass(false)} onClick={openWikipedia} type="button">
-            <Wikipedia className="size-4" aria-hidden="true" />
+            <BookOpenText className="size-4" aria-hidden="true" />
             Wikipedia
           </button>
         </div>
