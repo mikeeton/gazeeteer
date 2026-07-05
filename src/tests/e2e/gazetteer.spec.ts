@@ -97,7 +97,7 @@ test('searches, selects, saves, and shows insights', async ({ page }) => {
   await expect(page.getByText('Selected:')).toBeVisible();
   await expect(page.getByText('68M')).toBeVisible();
 
-  await page.getByRole('button', { name: /toggle map controls/i }).click();
+  await page.getByRole('button', { name: /open map menu/i }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.getByRole('button', { name: /saved/i }).click();
   await expect(page.getByText('Favorites')).toBeVisible();

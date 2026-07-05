@@ -308,6 +308,18 @@ select {
   opacity: 0 !important;
 }
 
+.menu-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.menu-section[open] summary span {
+  transform: rotate(45deg);
+}
+
+.menu-section summary span {
+  transition: transform 160ms ease;
+}
+
 .explorer-panel-body,
 .modal-scroll {
   scrollbar-width: thin;
@@ -389,6 +401,11 @@ select {
     border-bottom: 0;
     border-left: 0;
     border-radius: 16px 16px 0 0;
+    transition: transform 180ms ease;
+  }
+
+  main:has(.control-panel-open) .explorer-panel {
+    transform: translateY(calc(100% - 3.6rem));
   }
 
   .search-shell {

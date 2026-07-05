@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Banknote, CloudSun, Globe2, Loader2, X } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { getCountryInfo, getCurrencyInfo, getWeather } from '../api/gazetteerApi';
@@ -16,6 +17,44 @@ type DetailModalProps = {
 
 export function DetailModal({ mode, onClose }: DetailModalProps) {
   const selectedPlace = useAppStore((state) => state.selectedPlace);
+  const dialogRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = dialogRef.current;
+    const focusable = dialog?.querySelector<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    focusable?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Tab' || !dialog) return;
+
+      const items = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((item) => !item.hasAttribute('disabled'));
+      if (!items.length) return;
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previous?.focus();
+    };
+  }, [onClose]);
 
   if (!selectedPlace) return null;
 
@@ -42,6 +81,8 @@ export function DetailModal({ mode, onClose }: DetailModalProps) {
         exit={{ y: 16, opacity: 0 }}
         initial={{ y: 16, opacity: 0 }}
         onMouseDown={(event) => event.stopPropagation()}
+        aria-modal="true"
+        ref={dialogRef}
         role="dialog"
       >
         <header className="flex items-center justify-between gap-4 border-b border-slate-200/80 bg-slate-50/92 px-5 py-4">

@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: gazetteer
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: node server/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: GEONAMES_USER
+        sync: false
+      - key: WEATHER_API_KEY
+        sync: false
+      - key: API_RATE_LIMIT_PER_MINUTE
+        value: 120

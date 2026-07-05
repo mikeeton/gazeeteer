@@ -4,7 +4,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 dotenv.config();
 
@@ -351,9 +351,11 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-app.listen(port, () => {
-  console.log(`Gazetteer API listening on http://localhost:${port}`);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  app.listen(port, () => {
+    console.log(`Gazetteer API listening on http://localhost:${port}`);
+  });
+}
 
 async function fetchJson(url, init = {}) {
   const timeoutSignal = AbortSignal.timeout(12_000);
@@ -547,7 +549,7 @@ function sendError(res, error, fallback) {
   res.status(502).json({ error: message || fallback });
 }
 
-function normalizeCountry(geoRaw, restRaw) {
+export function normalizeCountry(geoRaw, restRaw) {
   const currencies = restRaw?.currencies
     ? Object.entries(restRaw.currencies).map(([code, value]) => ({
         code,

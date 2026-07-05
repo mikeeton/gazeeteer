@@ -25,6 +25,15 @@ It is designed as a portfolio-quality project: full-screen map-first UI, typed f
 
 ![Gazetteer home screen](docs/screenshots/gazetteer-home.png)
 
+Additional current UI captures:
+
+- [Desktop map workspace](docs/screenshots/final-style-desktop.png)
+- [Mobile map workspace](docs/screenshots/final-style-mobile.png)
+
+## Live Demo
+
+Deployment URL: pending. The app is ready for deployment, but publishing requires rotated API credentials and access to your hosting account.
+
 ## Tech Stack
 
 - React 19
@@ -54,6 +63,18 @@ It is designed as a portfolio-quality project: full-screen map-first UI, typed f
 - NASA EONET for wildfires, volcanoes, storms, and floods.
 - open.er-api.com for exchange rates.
 - mwgg Airports dataset for airport markers.
+
+## Technical Highlights
+
+- **Architecture:** React/Vite frontend with an Express backend that serves as the API proxy and production static server.
+- **Security:** API keys stay server-side in environment variables. `.env` is ignored and `.env.example` contains placeholders only.
+- **API proxy:** The backend normalizes third-party responses, applies timeouts, handles provider failures, and keeps browser code free of secrets.
+- **Caching:** Expensive upstream calls use in-memory TTL caching to reduce latency and provider load.
+- **State management:** Zustand stores selected place, favorites, search history, overlays, routes, nearby places, and drawing state.
+- **Map system:** React Leaflet renders base maps, selected places, routes, drawing geometry, nearby places, landmarks, airports, earthquakes, and NASA EONET events.
+- **Charts:** Recharts powers dashboard metrics and hourly weather visualisations.
+- **Testing:** Vitest covers geographic utilities, local persistence, drawing export helpers, and server data normalization. Playwright covers search, saved places, nearby places, and route planning.
+- **Performance:** Vite code splitting separates React, map, query/state, visualisation, and vendor chunks. The explorer panel and detail modals are lazy-loaded.
 
 ## Project Structure
 
@@ -184,6 +205,23 @@ http://localhost:3001
 ## Deployment Notes
 
 Run `npm run build` and deploy the generated `dist/` assets with the Express server, or host `dist/` separately and route `/api/*` to the backend.
+
+### Render Blueprint
+
+This repository includes `render.yaml` for a one-service Render deployment.
+
+1. Rotate old API keys before deployment.
+2. Create a new Render Blueprint from this repository.
+3. Set these Render environment variables:
+
+   ```text
+   CLIENT_ORIGIN=https://your-render-app-url.onrender.com
+   GEONAMES_USER=your_rotated_geonames_username
+   WEATHER_API_KEY=your_rotated_weatherapi_key
+   ```
+
+4. Deploy the service.
+5. Add the deployed URL to the **Live Demo** section above.
 
 Recommended production settings:
 

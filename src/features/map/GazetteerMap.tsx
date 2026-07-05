@@ -20,6 +20,7 @@ import toast from 'react-hot-toast';
 import { getAirports, getDisasters, getEarthquakes, getLandmarks } from '../../api/gazetteerApi';
 import { useAppStore } from '../../store/appStore';
 import type { Airport, DisasterEvent, DrawingFeature, EarthquakeFeature, PlaceSuggestion } from '../../types/app';
+import { drawingSummary } from '../../utils/explorerUtils';
 import { haversineKm } from '../../utils/geo';
 
 const defaultCenter: [number, number] = [20, 0];
@@ -304,10 +305,14 @@ function DrawingOverlay({ drawing }: { drawing: DrawingFeature }) {
       </button>
     </Popup>
   );
+  const label = drawingSummary(drawing);
 
   if (drawing.kind === 'marker') {
     return (
       <Marker icon={drawingIcon} position={drawing.points[0]}>
+        <Tooltip direction="top" permanent>
+          {label}
+        </Tooltip>
         {popup}
       </Marker>
     );
@@ -315,6 +320,9 @@ function DrawingOverlay({ drawing }: { drawing: DrawingFeature }) {
   if (drawing.kind === 'circle') {
     return (
       <Circle center={drawing.points[0]} pathOptions={{ color: '#0f8b8d' }} radius={(drawing.radiusKm ?? 0) * 1000}>
+        <Tooltip direction="top" permanent>
+          {label}
+        </Tooltip>
         {popup}
       </Circle>
     );
@@ -322,6 +330,9 @@ function DrawingOverlay({ drawing }: { drawing: DrawingFeature }) {
   if (drawing.kind === 'rectangle') {
     return (
       <Rectangle bounds={[drawing.points[0], drawing.points[1]]} pathOptions={{ color: '#e76f51' }}>
+        <Tooltip direction="top" permanent>
+          {label}
+        </Tooltip>
         {popup}
       </Rectangle>
     );
@@ -329,12 +340,18 @@ function DrawingOverlay({ drawing }: { drawing: DrawingFeature }) {
   if (drawing.kind === 'polygon') {
     return (
       <Polygon pathOptions={{ color: '#0f8b8d' }} positions={drawing.points}>
+        <Tooltip direction="top" permanent>
+          {label}
+        </Tooltip>
         {popup}
       </Polygon>
     );
   }
   return (
     <Polyline pathOptions={{ color: '#e76f51', weight: 4 }} positions={drawing.points}>
+      <Tooltip direction="top" permanent>
+        {label}
+      </Tooltip>
       {popup}
     </Polyline>
   );

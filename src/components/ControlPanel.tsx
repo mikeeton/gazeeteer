@@ -247,9 +247,12 @@ function buttonClass(active: boolean) {
 
 function MenuSection({ children, title }: { children: ReactNode; title: string }) {
   return (
-    <section className="grid gap-2">
-      <h3 className="ui-section-title">{title}</h3>
+    <details className="menu-section grid gap-2" open>
+      <summary className="ui-section-title flex cursor-pointer list-none items-center justify-between rounded-md py-1">
+        {title}
+        <span className="text-slate-500">+</span>
+      </summary>
       {children}
-    </section>
+    </details>
   );
 }
