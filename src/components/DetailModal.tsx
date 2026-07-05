@@ -29,7 +29,7 @@ export function DetailModal({ mode, onClose }: DetailModalProps) {
   return (
     <motion.div
       animate={{ opacity: 1 }}
-      className="absolute inset-0 z-[2000] grid place-items-center bg-ink/45 px-4 backdrop-blur-sm"
+      className="absolute inset-0 z-[2000] grid place-items-center bg-ink/55 px-4 backdrop-blur-md"
       exit={{ opacity: 0 }}
       initial={{ opacity: 0 }}
       onMouseDown={onClose}
@@ -38,15 +38,15 @@ export function DetailModal({ mode, onClose }: DetailModalProps) {
       <motion.section
         animate={{ y: 0, opacity: 1 }}
         aria-labelledby="detail-modal-title"
-        className="max-h-[86vh] w-[min(94vw,42rem)] overflow-hidden rounded-md bg-white text-ink shadow-panel"
+        className="glass-panel max-h-[86vh] w-[min(94vw,44rem)] overflow-hidden text-ink"
         exit={{ y: 16, opacity: 0 }}
         initial={{ y: 16, opacity: 0 }}
         onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-mist px-5 py-4">
+        <header className="flex items-center justify-between gap-4 border-b border-slate-200/80 bg-slate-50/92 px-5 py-4">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-teal">{title}</p>
+            <p className="ui-section-title text-teal">{title}</p>
             <h2 className="truncate text-lg font-semibold" id="detail-modal-title">
               {selectedPlace.name}, {selectedPlace.countryName}
             </h2>
@@ -58,7 +58,7 @@ export function DetailModal({ mode, onClose }: DetailModalProps) {
           />
           <button
             aria-label="Close details"
-            className="grid size-9 shrink-0 place-items-center rounded-md text-slate-500 transition hover:bg-slate-200 hover:text-ink"
+            className="ui-button ui-button-soft grid size-9 shrink-0 place-items-center p-0 text-slate-500"
             onClick={onClose}
             type="button"
           >
@@ -66,7 +66,7 @@ export function DetailModal({ mode, onClose }: DetailModalProps) {
           </button>
         </header>
 
-        <div className="max-h-[70vh] overflow-y-auto p-5">
+        <div className="modal-scroll max-h-[70vh] overflow-y-auto p-5">
           {mode === 'place' ? <PlaceDetails /> : null}
           {mode === 'currency' ? <CurrencyDetails /> : null}
           {mode === 'weather' ? <WeatherDetails /> : null}
@@ -112,7 +112,11 @@ function PlaceDetails() {
   return (
     <div className="grid gap-5 md:grid-cols-[1fr_9rem]">
       <InfoRows rows={rows} />
-      {data.coat ? <img alt={`${data.name} coat of arms`} className="mx-auto max-h-32 object-contain" src={data.coat} /> : null}
+      {data.coat ? (
+        <div className="ui-card grid place-items-center p-4">
+          <img alt={`${data.name} coat of arms`} className="max-h-32 object-contain" src={data.coat} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -182,7 +186,7 @@ function ForecastDetails() {
 
   return (
     <div className="grid gap-5">
-      <div className="h-56">
+      <div className="ui-card h-56 p-3">
         <ResponsiveContainer height="100%" width="100%">
           <AreaChart data={chartData} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
             <XAxis dataKey="date" />
@@ -195,7 +199,7 @@ function ForecastDetails() {
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         {data.forecast.forecastday.map((day) => (
-          <article className="rounded-md border border-slate-200 p-4" key={day.date}>
+          <article className="ui-card p-4" key={day.date}>
             <h3 className="font-semibold">{new Date(day.date).toLocaleDateString(undefined, { weekday: 'long' })}</h3>
             {day.day.condition.icon ? (
               <img alt="" className="my-2 h-12 w-12" src={`https:${day.day.condition.icon}`} />
@@ -229,7 +233,7 @@ function HourlyWeatherCharts({
     <div className="grid gap-4">
       <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Hourly outlook</h3>
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="h-52 rounded-md border border-slate-200 p-3">
+        <div className="ui-card h-52 p-3">
           <ResponsiveContainer height="100%" width="100%">
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -241,7 +245,7 @@ function HourlyWeatherCharts({
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <div className="h-52 rounded-md border border-slate-200 p-3">
+        <div className="ui-card h-52 p-3">
           <ResponsiveContainer height="100%" width="100%">
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -260,7 +264,7 @@ function HourlyWeatherCharts({
 
 function InfoRows({ rows }: { rows: Array<[string, string]> }) {
   return (
-    <dl className="divide-y divide-slate-200 rounded-md border border-slate-200">
+    <dl className="ui-card divide-y divide-slate-200 overflow-hidden">
       {rows.map(([label, value]) => (
         <div className="grid grid-cols-[8rem_1fr] gap-4 px-4 py-3 text-sm" key={label}>
           <dt className="font-semibold text-slate-600">{label}</dt>
@@ -281,9 +285,9 @@ function Metric({
   value: string;
 }) {
   return (
-    <article className="rounded-md border border-slate-200 p-4">
+    <article className="ui-card p-4">
       <Icon className="mb-3 size-5 text-teal" aria-hidden="true" />
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="ui-section-title">{label}</p>
       <p className="mt-1 break-words text-lg font-semibold">{value}</p>
     </article>
   );
@@ -291,7 +295,7 @@ function Metric({
 
 function LoadingState({ label }: { label: string }) {
   return (
-    <div className="flex items-center justify-center gap-3 py-12 text-slate-600">
+    <div className="ui-card-muted flex items-center justify-center gap-3 py-12 text-slate-600">
       <Loader2 className="size-5 animate-spin text-teal" aria-hidden="true" />
       <span>{label}</span>
     </div>
@@ -300,7 +304,7 @@ function LoadingState({ label }: { label: string }) {
 
 function ErrorState({ label }: { label: string }) {
   return (
-    <div className="rounded-md border border-coral/30 bg-coral/10 p-4 text-sm font-medium text-coral">
+    <div className="rounded-md border border-coral/30 bg-coral/10 p-4 text-sm font-semibold text-coral">
       {label}
     </div>
   );

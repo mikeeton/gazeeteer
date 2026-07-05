@@ -39,14 +39,14 @@ export function SearchBox() {
   };
 
   return (
-    <section className="pointer-events-none absolute left-1/2 top-4 z-[1000] w-[min(92vw,34rem)] -translate-x-1/2">
+    <section className="search-shell pointer-events-none absolute left-1/2 top-4 z-[1000] w-[min(92vw,34rem)] -translate-x-1/2">
       <div className="pointer-events-auto relative">
-        <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" />
+        <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-teal" />
         <input
           aria-autocomplete="list"
           aria-controls={listId}
           aria-expanded={isOpen}
-          className="h-12 w-full rounded-md border border-white/10 bg-white/95 pl-12 pr-12 text-sm font-medium text-ink shadow-panel outline-none transition focus:border-teal focus:ring-4 focus:ring-teal/20"
+          className="h-12 w-full rounded-md border border-white/70 bg-white/95 pl-12 pr-12 text-sm font-semibold text-ink shadow-panel outline-none backdrop-blur transition placeholder:text-slate-400 focus:border-teal focus:ring-4 focus:ring-teal/20"
           onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -73,7 +73,7 @@ export function SearchBox() {
         {query ? (
           <button
             aria-label="Clear search"
-            className="absolute right-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100"
+            className="absolute right-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-ink"
             onClick={() => {
               setQuery('');
               setIsOpen(false);
@@ -89,7 +89,7 @@ export function SearchBox() {
 
         {isOpen && debouncedQuery.length >= 2 ? (
           <ul
-            className="mt-2 max-h-80 overflow-y-auto rounded-md border border-white/10 bg-ink/95 p-1 shadow-panel backdrop-blur"
+            className="search-results mt-2 max-h-80 overflow-y-auto rounded-md border border-white/10 bg-ink/95 p-1.5 shadow-panel backdrop-blur"
             id={listId}
             role="listbox"
           >
@@ -100,7 +100,7 @@ export function SearchBox() {
               <li key={`${place.geonameId}-${place.name}`} role="option">
                 <button
                   className={`flex w-full items-center justify-between gap-4 rounded-md px-4 py-3 text-left transition hover:bg-white/10 focus:bg-white/10 focus:outline-none ${
-                    activeIndex === index ? 'bg-white/10' : ''
+                    activeIndex === index ? 'bg-white/10 ring-1 ring-white/10' : ''
                   }`}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => choosePlace(index)}
@@ -115,7 +115,7 @@ export function SearchBox() {
                         .join(' · ')}
                     </span>
                   </span>
-                  <span className="shrink-0 text-xs font-medium text-gold">
+                  <span className="shrink-0 rounded-md bg-gold/10 px-2 py-1 text-xs font-bold text-gold">
                     {featureTypes[place.fcode] ?? place.fclName ?? featureClasses[place.fcl ?? ''] ?? place.fcode}
                   </span>
                 </button>

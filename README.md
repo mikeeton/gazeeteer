@@ -1,36 +1,29 @@
 # Gazetteer
 
-Gazetteer is a production-style React map application for exploring almost any named place in the world: countries, counties, states, cities, towns, villages, neighbourhoods, airports, landmarks, schools, hospitals, parks, rivers, lakes, mountains, islands, and other geographic features.
+Gazetteer is a polished React and Express map application for exploring countries, regions, cities, landmarks, weather, nearby places, routes, and live geographic overlays.
 
-The app is built as a polished portfolio project with a React frontend, an Express API proxy, typed data access, cached API calls, map overlays, local persistence, responsive UI, dark mode, comparison tools, nearby-place discovery, and route planning.
+It is designed as a portfolio-quality project: full-screen map-first UI, typed frontend data access, backend API proxying, cached third-party requests, local favorites/history, responsive panels, dark mode, drawing tools, exports, and automated tests.
+
+## Features
+
+- Global place search for countries, regions, cities, landmarks, transport hubs, parks, rivers, mountains, islands, and more.
+- Interactive Leaflet map with street, satellite, terrain, dark, and light map styles.
+- Hamburger map menu with grouped controls for styles, actions, overlays, and detail panels.
+- Country and place details with flag, capital, population, area, languages, currency, calling code, domains, timezones, and driving side.
+- Weather, multi-day forecast, hourly charts, UV, wind, humidity, sunrise, sunset, and Open-Meteo fallback.
+- Country comparison with population, area, density, GDP, life expectancy, internet usage, inflation, languages, currency, calling code, and domains.
+- Nearby places from OpenStreetMap Overpass, including cafes, restaurants, hotels, hospitals, banks, police, schools, museums, pharmacies, and parks.
+- Route planning with OSRM for driving, walking, and cycling, including direct distance, route distance, travel time, directions, and map line rendering.
+- Drawing and measurement tools for markers, circles, rectangles, polygons, distance, radius, area, and GeoJSON export.
+- Map overlays for airports, landmarks, earthquakes, wildfires, volcanoes, storms, and floods.
+- Favorites and recent search history stored locally.
+- Export selected places as JSON, routes and drawings as GeoJSON, and printable PDF reports.
+- Responsive desktop and mobile layout with a bottom-sheet explorer panel on smaller screens.
+- Toast notifications, skeleton loaders, retryable error states, API rate limiting, and request caching.
 
 ## Screenshot
 
 ![Gazetteer home screen](docs/screenshots/gazetteer-home.png)
-
-## Highlights
-
-- Global place search powered by GeoNames feature classes, not just countries.
-- Full-screen interactive map with street and satellite layers.
-- Support for countries, administrative areas, populated places, sites, buildings, transport locations, water features, landforms, parks, forests, and undersea features.
-- Country and place detail panels.
-- Weather, multi-day forecast, UV, wind, humidity, sunrise/sunset, and air-quality support.
-- Country comparison with population, area, density, GDP, life expectancy, internet usage, CO2, languages, currency, capital, calling code, and domains where available.
-- Statistics dashboard with Recharts visualisations.
-- Nearby places from OpenStreetMap Overpass, including cafes, restaurants, hotels, hospitals, banks, police, schools, museums, pharmacies, and parks.
-- Route planning with OSRM for driving, walking, and cycling profiles.
-- Route summary cards, direct flight distance, estimated travel time, turn-by-turn step summaries, and route line rendering on the map.
-- Drawing and measurement tools for markers, circles, rectangles, polygons, and point-to-point distances.
-- Favorites and recent search history stored locally.
-- Street, satellite, terrain, dark, and light map mode switching.
-- Airport, landmark, and earthquake overlays.
-- NASA EONET disaster overlays for wildfires, volcanoes, storms, and floods.
-- Wikipedia integration.
-- Dark mode.
-- Responsive layout for desktop, tablet, and mobile.
-- Toast notifications, loading states, empty states, and controlled API errors.
-- Export selected places as JSON, route geometry and drawings as GeoJSON, printable PDF reports, and print-ready map captures.
-- Server-side TTL caching, request logging, and API rate limiting.
 
 ## Tech Stack
 
@@ -38,84 +31,95 @@ The app is built as a polished portfolio project with a React frontend, an Expre
 - TypeScript
 - Vite
 - Tailwind CSS
-- React Router
 - React Leaflet and Leaflet
 - TanStack Query
-- Zustand with local persistence
-- Axios
+- Zustand
 - Framer Motion
-- React Hot Toast
 - Recharts
 - Lucide React
 - Express
 - Vitest
+- Playwright
 
-## APIs And Data Sources
+## Data Sources
 
-- GeoNames: global place search, country facts, and Wikipedia landmarks
-- WeatherAPI: current weather and forecasts
-- Open-Meteo: no-key weather fallback when WeatherAPI credentials fail
-- OpenStreetMap: street map tiles and Overpass nearby-place data
-- Esri World Imagery: satellite map tiles
-- OSRM: route planning
-- World Bank: country statistics
-- USGS: recent earthquake feed
-- NASA EONET: active wildfires, volcanoes, storms, and flood events
-- open.er-api.com: exchange rates
-- mwgg Airports dataset: airport overlay
+- GeoNames for search, country facts, and Wikipedia landmarks.
+- RestCountries and the mledoze countries dataset for richer country metadata.
+- WeatherAPI with Open-Meteo fallback for weather and forecast data.
+- OpenStreetMap and Overpass for map tiles and nearby places.
+- Esri World Imagery for satellite tiles.
+- OSRM for route planning.
+- World Bank for country statistics.
+- USGS for recent earthquakes.
+- NASA EONET for wildfires, volcanoes, storms, and floods.
+- open.er-api.com for exchange rates.
+- mwgg Airports dataset for airport markers.
 
 ## Project Structure
 
 ```text
 src/
-  api/          Typed frontend API functions
-  components/   Shared UI, modals, panels, controls
+  api/          Frontend API functions
+  components/   Panels, modals, and shared UI
   constants/    Feature labels and lookup data
   features/     Map and search feature modules
   hooks/        Shared React hooks
   layouts/      Route layouts
-  pages/        App pages
-  store/        Zustand state and persistence
+  pages/        Page-level screens
+  store/        Zustand state and local persistence
   styles/       Tailwind and global CSS
-  tests/        Unit tests
+  tests/        Unit and E2E tests
   types/        Shared TypeScript types
   utils/        Geographic helpers
 server/
-  index.js      Express API proxy and data normalisation
+  index.js      Express API proxy, caching, sanitisation, and data normalization
 ```
 
 ## Getting Started
 
-1. Install dependencies:
+Install dependencies:
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-2. Create your local environment file:
+Create the local environment file:
 
-   ```bash
-   cp .env.example .env
-   ```
+```bash
+cp .env.example .env
+```
 
-3. Fill in the required values:
+Fill in the required values:
 
-   ```env
-   GEONAMES_USER=your_geonames_username_here
-   WEATHER_API_KEY=your_weatherapi_key_here
-   ```
+```env
+GEONAMES_USER=your_geonames_username_here
+WEATHER_API_KEY=your_weatherapi_key_here
+```
 
-4. Start the frontend and backend:
+Start the frontend and backend together:
 
-   ```bash
-   npm run dev:full
-   ```
+```bash
+npm run dev:full
+```
 
-5. Open:
+Open the app:
 
-   ```text
-   http://localhost:5173
-   ```
+```text
+http://localhost:5173
+```
+
+## Using The App
+
+1. Search for a place using the search box.
+2. Select a result to move the map and unlock place-specific tools.
+3. Open the hamburger menu in the top-right corner.
+4. Use **Map style** to switch between street, satellite, terrain, dark, and light maps.
+5. Use **Quick actions** for theme, favorite, home, and Wikipedia.
+6. Use **Overlays** to toggle airports, earthquakes, landmarks, and disaster layers.
+7. Use **Details** to open place, currency, weather, and forecast modals.
+8. Use the bottom explorer panel for statistics, comparison, nearby places, routes, drawing tools, saved places, and exports.
+
+The hamburger menu also closes when you press `Escape` or click outside it.
 
 ## Environment Variables
 
@@ -128,21 +132,21 @@ server/
 | `GEONAMES_USER` | Yes | GeoNames username used by backend search, country, and landmark routes. |
 | `WEATHER_API_KEY` | Yes | WeatherAPI key used only by the backend. |
 
-## Available Scripts
+## Scripts
 
 ```bash
 npm run dev       # Start Vite frontend
 npm run server    # Start Express backend
-npm run dev:full  # Start both frontend and backend
+npm run dev:full  # Start frontend and backend
 npm run lint      # Run ESLint
 npm test          # Run Vitest
-npm run test:e2e  # Run Playwright end-to-end tests
+npm run test:e2e  # Run Playwright tests
 npm run build     # Type-check and build production assets
 ```
 
 ## Quality Checks
 
-Before publishing or deploying, run:
+Before publishing:
 
 ```bash
 npm run lint
@@ -154,13 +158,13 @@ npm audit
 
 ## Docker
 
-Build and run with Docker Compose:
+Build and run the production container:
 
 ```bash
 docker compose up --build
 ```
 
-The production container serves the API and compiled frontend on:
+The container serves the API and compiled frontend on:
 
 ```text
 http://localhost:3001
@@ -168,39 +172,34 @@ http://localhost:3001
 
 ## Security Notes
 
-- API keys are read from environment variables.
-- Private keys are not exposed in frontend source.
-- `.env.example` intentionally contains placeholders only.
-- Third-party calls are proxied through Express.
-- User input is bounded or sanitized before being sent to upstream APIs.
-- Upstream fetches have timeouts so requests do not hang indefinitely.
-- `/api/*` routes are rate-limited.
-- Expensive upstream API responses are cached in memory with short TTLs.
-- `.env` is gitignored.
-- Rotate any credentials that were ever committed, pasted into screenshots, or shared in support conversations before publishing the app.
+- API keys are loaded from environment variables.
+- `.env` is ignored by Git.
+- `.env.example` contains placeholders only.
+- Third-party API calls are proxied through Express, not exposed directly from the browser.
+- User input is bounded or sanitized before upstream API requests.
+- API routes are rate-limited.
+- Upstream API responses are cached with short TTLs.
+- Rotate any credentials that were previously committed, pasted, or shared before deploying publicly.
 
-## Deployment
+## Deployment Notes
 
-Run `npm run build` and deploy the generated `dist/` assets with the Express server, or host `dist/` on a static platform and route `/api/*` to the backend. Configure the environment variables above in your production host.
+Run `npm run build` and deploy the generated `dist/` assets with the Express server, or host `dist/` separately and route `/api/*` to the backend.
 
-Recommended production setup:
+Recommended production settings:
 
-- Rotate GeoNames and WeatherAPI credentials before publishing.
 - Set `NODE_ENV=production`.
-- Set `CLIENT_ORIGIN` to the deployed frontend origin.
-- Tune `API_RATE_LIMIT_PER_MINUTE` for expected traffic.
-- Run Express behind HTTPS and a reverse proxy.
-- Use host-level logging and error monitoring, such as Sentry, Logtail, or your platform logs.
-- Put static assets behind a CDN when traffic grows.
-- Run `docker compose up --build` locally before publishing if you plan to ship the container.
-- Keep `CLIENT_ORIGIN` locked to the deployed frontend URL and avoid wildcard CORS in production.
+- Set `CLIENT_ORIGIN` to the deployed frontend URL.
+- Keep CORS locked to known origins.
+- Rotate GeoNames and WeatherAPI credentials before launch.
+- Run the Express server behind HTTPS and a reverse proxy.
+- Replace in-memory cache with Redis if running multiple server instances.
+- Add production logging and error monitoring.
 
-## Future Improvements
+## Known Limits
 
-- Replace in-memory cache with Redis for multi-instance deployments.
-- Add provider-backed live flight and marine traffic layers when commercial API credentials are available.
-- Add true raster image export with a tile provider that permits CORS-safe canvas capture.
-- Add Lighthouse results before publishing the portfolio version.
+- Live flight and marine traffic layers need commercial or restricted APIs, so they are not enabled by default.
+- True raster map image export depends on tile-provider CORS permissions. The app supports print/PDF map capture reliably.
+- Some country statistics depend on World Bank availability and may be blank for smaller territories.
 
 ## License
 

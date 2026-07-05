@@ -49,8 +49,8 @@ export function ExplorerPanel() {
   const selectedPlace = useAppStore((state) => state.selectedPlace);
 
   return (
-    <aside className="explorer-panel absolute bottom-4 left-4 z-[1000] w-[min(94vw,27rem)] overflow-hidden rounded-md border border-white/10 bg-white/94 text-ink shadow-panel backdrop-blur dark-panel">
-      <nav className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/90" aria-label="Explorer tools">
+    <aside className="explorer-panel glass-panel absolute bottom-4 left-4 z-[1000] w-[min(94vw,28rem)] overflow-hidden text-ink dark-panel">
+      <nav className="grid grid-cols-7 border-b border-slate-200/80 bg-slate-50/90 p-1" aria-label="Explorer tools">
         <TabButton active={tab === 'insights'} icon={BarChart3} label="Stats" onClick={() => setTab('insights')} />
         <TabButton active={tab === 'compare'} icon={GitCompare} label="Compare" onClick={() => setTab('compare')} />
         <TabButton active={tab === 'nearby'} icon={MapPin} label="Nearby" onClick={() => setTab('nearby')} />
@@ -59,7 +59,7 @@ export function ExplorerPanel() {
         <TabButton active={tab === 'saved'} icon={Heart} label="Saved" onClick={() => setTab('saved')} />
         <TabButton active={tab === 'export'} icon={FileDown} label="Export" onClick={() => setTab('export')} />
       </nav>
-      <div className="max-h-[42vh] overflow-y-auto p-4 md:max-h-[56vh]">
+      <div className="explorer-panel-body max-h-[42vh] overflow-y-auto p-4 md:max-h-[56vh]">
         {!selectedPlace && tab !== 'saved' ? <EmptyState /> : null}
         {selectedPlace && tab === 'insights' ? <InsightsTab place={selectedPlace} /> : null}
         {selectedPlace && tab === 'compare' ? <CompareTab place={selectedPlace} /> : null}
@@ -102,7 +102,7 @@ function InsightsTab({ place }: { place: PlaceSuggestion }) {
         <Stat label="Capital" value={metrics.data.capital || 'Unknown'} />
         <Stat label="Life exp." value={metrics.data.lifeExpectancy ? `${metrics.data.lifeExpectancy} yrs` : 'No data'} />
       </div>
-      <div className="h-44 rounded-md border border-slate-200 p-2">
+      <div className="ui-card h-44 p-2">
         <ResponsiveContainer height="100%" width="100%">
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -113,7 +113,7 @@ function InsightsTab({ place }: { place: PlaceSuggestion }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+      <div className="ui-card-muted p-3 text-sm text-slate-700">
         <p className="font-semibold text-ink">Travel snapshot</p>
         <p className="mt-1">
           {place.name} uses {metrics.data.currency || 'local currency'} and drives on the{' '}
@@ -143,11 +143,11 @@ function CompareTab({ place }: { place: PlaceSuggestion }) {
   return (
     <div className="grid gap-4">
       <div className="grid gap-2">
-        <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="compare-select">
+        <label className="ui-section-title" htmlFor="compare-select">
           Add country from history
         </label>
         <select
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+          className="ui-select"
           id="compare-select"
           onChange={(event) => {
             const value = event.target.value;
@@ -166,7 +166,7 @@ function CompareTab({ place }: { place: PlaceSuggestion }) {
       <div className="flex flex-wrap gap-2">
         {codes.map((code) => (
           <button
-            className="rounded-md bg-teal/10 px-3 py-1 text-xs font-semibold text-teal"
+            className="rounded-md border border-teal/20 bg-teal/10 px-3 py-1 text-xs font-bold text-teal transition hover:bg-teal/15"
             key={code}
             onClick={() => setCodes((current) => current.filter((item) => item !== code))}
             type="button"
@@ -181,7 +181,7 @@ function CompareTab({ place }: { place: PlaceSuggestion }) {
       {query.data ? (
         <div className="grid gap-3">
           {query.data.map((country) => (
-            <article className="rounded-md border border-slate-200 p-3" key={country.code}>
+            <article className="ui-card p-3" key={country.code}>
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">{country.name}</h3>
                 <span className="text-xs text-slate-500">{country.region}</span>
@@ -189,11 +189,11 @@ function CompareTab({ place }: { place: PlaceSuggestion }) {
               <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <MiniRow label="Population" value={formatCompact(country.population)} />
                 <MiniRow label="GDP" value={country.gdpUsd ? `$${formatCompact(country.gdpUsd)}` : 'No data'} />
-        <MiniRow label="Life exp." value={country.lifeExpectancy ? `${country.lifeExpectancy}` : 'No data'} />
-        <MiniRow label="Internet" value={country.internetUsersPct ? `${country.internetUsersPct}%` : 'No data'} />
-        <MiniRow label="Literacy" value={country.literacyPct ? `${country.literacyPct}%` : 'No data'} />
-        <MiniRow label="Inflation" value={country.inflationPct ? `${country.inflationPct}%` : 'No data'} />
-      </dl>
+                <MiniRow label="Life exp." value={country.lifeExpectancy ? `${country.lifeExpectancy}` : 'No data'} />
+                <MiniRow label="Internet" value={country.internetUsersPct ? `${country.internetUsersPct}%` : 'No data'} />
+                <MiniRow label="Literacy" value={country.literacyPct ? `${country.literacyPct}%` : 'No data'} />
+                <MiniRow label="Inflation" value={country.inflationPct ? `${country.inflationPct}%` : 'No data'} />
+              </dl>
             </article>
           ))}
         </div>
@@ -221,7 +221,7 @@ function NearbyTab({ place }: { place: PlaceSuggestion }) {
     <div className="grid gap-3">
       <div className="grid grid-cols-[1fr_auto] gap-2">
         <select
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+          className="ui-select"
           onChange={(event) => setCategory(event.target.value as NearbyCategory)}
           value={category}
         >
@@ -231,14 +231,14 @@ function NearbyTab({ place }: { place: PlaceSuggestion }) {
             </option>
           ))}
         </select>
-        <button className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white" onClick={loadNearby} type="button">
+        <button className="ui-button ui-button-primary" onClick={loadNearby} type="button">
           Find
         </button>
       </div>
       {query.isFetching ? <SkeletonRows /> : null}
       {query.isError ? <PanelError label="Nearby places could not be loaded." onRetry={loadNearby} /> : null}
       {query.data?.map((item) => (
-        <article className="flex items-center justify-between rounded-md border border-slate-200 p-3 text-sm" key={item.id}>
+        <article className="ui-card flex items-center justify-between p-3 text-sm" key={item.id}>
           <span className="font-medium">{item.name}</span>
           <span className="text-slate-500">{item.distanceKm} km</span>
         </article>
@@ -276,7 +276,7 @@ function RouteTab({ place }: { place: PlaceSuggestion }) {
   return (
     <div className="grid gap-3">
       <select
-        className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+        className="ui-select"
         onChange={(event) => setDestinationId(event.target.value)}
         value={destinationId}
       >
@@ -290,7 +290,7 @@ function RouteTab({ place }: { place: PlaceSuggestion }) {
       <div className="grid grid-cols-3 gap-2">
         {(['driving', 'walking', 'cycling'] as const).map((item) => (
           <button
-            className={`rounded-md px-3 py-2 text-sm font-semibold ${profile === item ? 'bg-teal text-white' : 'bg-slate-100'}`}
+            className={`ui-button ${profile === item ? 'ui-button-active' : 'ui-button-soft'}`}
             key={item}
             onClick={() => setProfile(item)}
             type="button"
@@ -299,7 +299,7 @@ function RouteTab({ place }: { place: PlaceSuggestion }) {
           </button>
         ))}
       </div>
-      <button className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white" onClick={calculate} type="button">
+      <button className="ui-button ui-button-primary" onClick={calculate} type="button">
         Calculate route
       </button>
       {flightDistance ? <Stat label="Flight distance" value={`${flightDistance.toFixed(1)} km`} /> : null}
@@ -313,7 +313,7 @@ function RouteTab({ place }: { place: PlaceSuggestion }) {
             <Stat label="Mode" value={query.data.profile} />
             <Stat label="Direct gap" value={`${query.data.flightDistanceKm} km`} />
           </div>
-          <div className="rounded-md border border-slate-200 p-3">
+          <div className="ui-card p-3">
             <p className="text-sm font-semibold">Directions</p>
             <ol className="mt-2 grid gap-2 text-sm">
               {query.data.steps.slice(0, 8).map((step, index) => (
@@ -354,7 +354,7 @@ function DrawTab() {
       <div className="grid grid-cols-3 gap-2">
         {(['select', 'marker', 'circle', 'rectangle', 'polygon', 'distance'] as DrawingMode[]).map((mode) => (
           <button
-            className={`rounded-md px-2 py-2 text-xs font-semibold ${drawingMode === mode ? 'bg-teal text-white' : 'bg-slate-100'}`}
+            className={`ui-button px-2 text-xs ${drawingMode === mode ? 'ui-button-active' : 'ui-button-soft'}`}
             key={mode}
             onClick={() => setDrawingMode(mode)}
             type="button"
@@ -363,26 +363,26 @@ function DrawTab() {
           </button>
         ))}
       </div>
-      <div className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+      <div className="ui-card-muted p-3 text-sm text-slate-700">
         <p className="font-semibold text-ink">How drawing works</p>
         <p className="mt-1">
           Marker uses one click. Circle, rectangle, and distance use two clicks. Polygon accepts multiple clicks, then finish it here.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <button className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white" onClick={finishPolygon} type="button">
+        <button className="ui-button ui-button-primary" onClick={finishPolygon} type="button">
           Finish polygon
         </button>
-        <button className="rounded-md bg-slate-100 px-3 py-2 text-sm font-semibold" onClick={() => setDrawingDraft([])} type="button">
+        <button className="ui-button ui-button-soft" onClick={() => setDrawingDraft([])} type="button">
           Clear draft
         </button>
       </div>
-      <button className="rounded-md bg-coral px-3 py-2 text-sm font-semibold text-white" onClick={clearDrawings} type="button">
+      <button className="ui-button bg-coral text-white hover:bg-coral/90" onClick={clearDrawings} type="button">
         Clear drawings
       </button>
       <div className="grid gap-2">
         {drawings.map((drawing) => (
-          <article className="rounded-md border border-slate-200 p-3 text-sm" key={drawing.id}>
+          <article className="ui-card p-3 text-sm" key={drawing.id}>
             <p className="font-semibold">{drawing.label}</p>
             <p className="text-slate-500">{drawingSummary(drawing)}</p>
           </article>
@@ -402,7 +402,7 @@ function SavedTab() {
     <div className="grid gap-4">
       {selectedPlace ? (
         <button
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-coral px-3 py-2 text-sm font-semibold text-white"
+          className="ui-button bg-coral text-white hover:bg-coral/90"
           onClick={() => toggleFavorite(selectedPlace)}
           type="button"
         >
@@ -430,14 +430,14 @@ function ExportTab({ place }: { place: PlaceSuggestion }) {
   return (
     <div className="grid gap-3">
       <button
-        className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white"
+        className="ui-button ui-button-primary"
         onClick={() => downloadJson(`${place.name}-place.json`, place)}
         type="button"
       >
         Export selected place JSON
       </button>
       <button
-        className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+        className="ui-button ui-button-primary"
         disabled={!route}
         onClick={() =>
           route &&
@@ -455,14 +455,14 @@ function ExportTab({ place }: { place: PlaceSuggestion }) {
         Export current route GeoJSON
       </button>
       <button
-        className="rounded-md bg-teal px-3 py-2 text-sm font-semibold text-white"
+        className="ui-button ui-button-accent"
         onClick={() => printReport(place, nearbyPlaces)}
         type="button"
       >
         Print / save PDF report
       </button>
       <button
-        className="inline-flex items-center justify-center gap-2 rounded-md bg-teal px-3 py-2 text-sm font-semibold text-white"
+        className="ui-button ui-button-accent"
         onClick={() => exportMapImage(place.name)}
         type="button"
       >
@@ -470,7 +470,7 @@ function ExportTab({ place }: { place: PlaceSuggestion }) {
         Export map image
       </button>
       <button
-        className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+        className="ui-button ui-button-primary"
         disabled={!drawings.length}
         onClick={() => downloadJson(`${place.name}-drawings.geojson`, drawingsToGeoJson(drawings))}
         type="button"
@@ -503,7 +503,7 @@ function SavedList({
       </p>
       {places.map((place) => (
         <button
-          className="flex items-center justify-between rounded-md border border-slate-200 p-3 text-left text-sm transition hover:bg-slate-50"
+          className="ui-card flex items-center justify-between p-3 text-left text-sm transition hover:-translate-y-0.5 hover:bg-slate-50"
           key={`${label}-${place.geonameId}`}
           onClick={() => onSelect(place)}
           type="button"
@@ -529,8 +529,8 @@ function TabButton({
 }) {
   return (
     <button
-      className={`grid h-14 place-items-center text-xs font-semibold transition ${
-        active ? 'bg-white text-teal shadow-sm' : 'text-slate-500 hover:bg-white/70 hover:text-ink'
+      className={`grid h-12 place-items-center rounded-md text-xs font-bold transition ${
+        active ? 'bg-white text-teal shadow-sm ring-1 ring-slate-200/70' : 'text-slate-500 hover:bg-white/70 hover:text-ink'
       }`}
       onClick={onClick}
       type="button"
@@ -543,8 +543,8 @@ function TabButton({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-md border border-slate-200 bg-white p-3">
-      <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
+    <article className="ui-card p-3">
+      <p className="ui-section-title">{label}</p>
       <p className="mt-1 break-words text-base font-semibold text-ink">{value}</p>
     </article>
   );
@@ -561,19 +561,19 @@ function MiniRow({ label, value }: { label: string; value: string }) {
 
 function EmptyState() {
   return (
-    <div className="grid place-items-center py-8 text-center text-slate-500">
-      <SearchX className="mb-2 size-8" />
-      <p className="text-sm">Search for a place to unlock insights and tools.</p>
+    <div className="ui-card-muted grid place-items-center px-5 py-8 text-center text-slate-500">
+      <SearchX className="mb-2 size-8 text-teal" />
+      <p className="text-sm font-medium">Search for a place to unlock insights and tools.</p>
     </div>
   );
 }
 
 function PanelError({ label, onRetry }: { label: string; onRetry?: () => void }) {
   return (
-    <div className="grid gap-2 rounded-md bg-coral/10 p-3 text-sm font-semibold text-coral">
+    <div className="grid gap-2 rounded-md border border-coral/20 bg-coral/10 p-3 text-sm font-semibold text-coral">
       <span>{label}</span>
       {onRetry ? (
-        <button className="w-fit rounded-md bg-white px-3 py-1 text-xs text-coral" onClick={onRetry} type="button">
+        <button className="ui-button w-fit bg-white px-3 py-1 text-xs text-coral" onClick={onRetry} type="button">
           Retry
         </button>
       ) : null}
@@ -585,7 +585,7 @@ function SkeletonRows() {
   return (
     <div className="grid gap-2">
       {[1, 2, 3].map((item) => (
-        <div className="h-12 animate-pulse rounded-md bg-slate-100" key={item} />
+        <div className="h-12 animate-pulse rounded-md bg-slate-200/70" key={item} />
       ))}
     </div>
   );
@@ -651,7 +651,7 @@ function WeatherMiniChart({
       <p className="flex items-center gap-2 text-sm font-semibold">
         <CloudSun className="size-4 text-teal" /> Hourly weather
       </p>
-      <div className="h-40 rounded-md border border-slate-200 p-2">
+      <div className="ui-card h-40 p-2">
         <ResponsiveContainer height="100%" width="100%">
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />

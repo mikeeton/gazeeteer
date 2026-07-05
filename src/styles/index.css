@@ -6,6 +6,19 @@
   color-scheme: light;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --surface: rgba(255, 255, 255, 0.93);
+  --surface-strong: #ffffff;
+  --surface-muted: rgba(248, 250, 252, 0.94);
+  --surface-dark: rgba(17, 24, 39, 0.9);
+  --border-soft: rgba(15, 23, 42, 0.1);
+  --border-inverse: rgba(255, 255, 255, 0.12);
+  --text-main: #151819;
+  --text-muted: #64748b;
+  --accent: #0f8b8d;
+  --accent-2: #e76f51;
+  --accent-3: #f4a261;
+  --shadow-panel: 0 24px 70px rgba(15, 23, 42, 0.22);
+  --shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
 
 * {
@@ -24,13 +37,184 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
+}
+
+button,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.glass-panel {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(18px);
+}
+
+.dark-glass {
+  border: 1px solid var(--border-inverse);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(31, 41, 55, 0.94), rgba(17, 24, 39, 0.92));
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(18px);
+}
+
+.ui-section-title {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-dark .ui-section-title {
+  color: #94a3b8;
+}
+
+.ui-button {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.56rem 0.78rem;
+  font-size: 0.875rem;
+  font-weight: 750;
+  line-height: 1.1;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.ui-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.ui-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(15, 139, 141, 0.24);
+}
+
+.ui-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.ui-button-primary {
+  background: #151819;
+  color: #ffffff;
+}
+
+.ui-button-primary:hover:not(:disabled) {
+  background: #263238;
+}
+
+.ui-button-accent {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.ui-button-accent:hover:not(:disabled) {
+  background: #0b7476;
+}
+
+.ui-button-soft {
+  border-color: rgba(15, 23, 42, 0.08);
+  background: rgba(241, 245, 249, 0.92);
+  color: #1e293b;
+}
+
+.ui-button-soft:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.ui-button-dark {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.ui-button-dark:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.ui-button-active {
+  border-color: rgba(15, 139, 141, 0.22);
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(15, 139, 141, 0.24);
+}
+
+.ui-input,
+.ui-select {
+  min-height: 2.625rem;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.94);
+  color: #151819;
+  padding: 0.62rem 0.75rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.ui-input:focus,
+.ui-select:focus {
+  border-color: rgba(15, 139, 141, 0.7);
+  box-shadow: 0 0 0 4px rgba(15, 139, 141, 0.16);
+}
+
+.ui-card {
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+}
+
+.ui-card-muted {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.9));
+}
+
+.app-dark .ui-card,
+.app-dark .ui-card-muted {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.app-dark .ui-input,
+.app-dark .ui-select {
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(15, 23, 42, 0.68);
+  color: #f8fafc;
 }
 
 .leaflet-container {
   background: #dbe5e5;
   font: inherit;
+}
+
+.leaflet-control-zoom a {
+  border: 0 !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: #151819 !important;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
 }
 
 .selected-place-marker span {
@@ -98,9 +282,53 @@ input {
   box-shadow: 0 8px 22px rgba(21, 24, 25, 0.22);
 }
 
+.search-shell {
+  filter: drop-shadow(0 18px 40px rgba(15, 23, 42, 0.22));
+}
+
+.search-results {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 139, 141, 0.9) rgba(255, 255, 255, 0.08);
+}
+
+.explorer-panel {
+  box-shadow: var(--shadow-panel);
+}
+
+.control-toggle,
+.control-panel {
+  z-index: 1200 !important;
+}
+
+.control-panel-open {
+  opacity: 1 !important;
+}
+
+.control-panel-closed {
+  opacity: 0 !important;
+}
+
+.explorer-panel-body,
+.modal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 139, 141, 0.8) rgba(15, 23, 42, 0.08);
+}
+
+.explorer-panel-body::-webkit-scrollbar,
+.modal-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.explorer-panel-body::-webkit-scrollbar-thumb,
+.modal-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(15, 139, 141, 0.8);
+}
+
 .app-dark .dark-panel {
   border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(21, 24, 25, 0.9);
+  background:
+    linear-gradient(180deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.92));
   color: #f8fafc;
 }
 
@@ -132,6 +360,24 @@ input {
   background-color: rgba(255, 255, 255, 0.08);
 }
 
+.control-panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 139, 141, 0.9) rgba(255, 255, 255, 0.08);
+}
+
+.control-panel-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.control-panel-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.control-panel-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(15, 139, 141, 0.9);
+}
+
 @media (max-width: 720px) {
   .explorer-panel {
     right: 0;
@@ -145,6 +391,11 @@ input {
     border-radius: 16px 16px 0 0;
   }
 
+  .search-shell {
+    top: 0.75rem;
+    width: min(94vw, 28rem);
+  }
+
   .explorer-panel nav button {
     height: 3rem;
     font-size: 0.68rem;
@@ -156,10 +407,15 @@ input {
   }
 
   .control-panel {
-    top: 8rem;
+    top: 7.75rem;
     right: 0.75rem;
-    max-height: 56vh;
-    overflow-y: auto;
+    width: min(22rem, calc(100vw - 1.5rem));
+    max-height: calc(100dvh - 8.5rem);
+    background: rgba(15, 23, 42, 0.97);
+  }
+
+  .control-panel-scroll {
+    max-height: calc(100dvh - 15.5rem);
   }
 }
 
