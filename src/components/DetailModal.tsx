@@ -4,7 +4,7 @@ import { Banknote, CloudSun, Globe2, Loader2, X } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { getCountryInfo, getCurrencyInfo, getWeather } from '../api/gazetteerApi';
-import { featureTypes } from '../constants/featureTypes';
+import { featureClasses, featureTypes } from '../constants/featureTypes';
 import { useAppStore } from '../store/appStore';
 import type { DetailMode } from '../types/app';
 import { flagUrl } from '../utils/geo';
@@ -90,7 +90,13 @@ function PlaceDetails() {
   const currency = data.currencies[0];
   const rows: Array<[string, string]> = [
     ['Official name', data.official],
-    ['Feature', featureTypes[selectedPlace.fcode] ?? selectedPlace.fcode],
+    [
+      'Feature',
+      featureTypes[selectedPlace.fcode] ??
+        selectedPlace.fclName ??
+        featureClasses[selectedPlace.fcl ?? ''] ??
+        selectedPlace.fcode,
+    ],
     ['Capital', data.capital || 'Not available'],
     ['Region', [data.region, data.subregion].filter(Boolean).join(', ')],
     ['Population', data.population.toLocaleString()],

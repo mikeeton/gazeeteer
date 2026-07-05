@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { searchPlaces } from '../../api/gazetteerApi';
-import { featureTypes } from '../../constants/featureTypes';
+import { featureClasses, featureTypes } from '../../constants/featureTypes';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useAppStore } from '../../store/appStore';
 
@@ -52,7 +52,7 @@ export function SearchBox() {
             if (event.key === 'Escape') setIsOpen(false);
             if (event.key === 'Enter' && data.length > 0) choosePlace(0);
           }}
-          placeholder="Search for a country, state, or county"
+          placeholder="Search any country, county, city, landmark, airport, river, mountain..."
           role="combobox"
           type="search"
           value={query}
@@ -96,7 +96,7 @@ export function SearchBox() {
                     <span className="text-xs text-slate-300">{place.countryName}</span>
                   </span>
                   <span className="shrink-0 text-xs font-medium text-gold">
-                    {featureTypes[place.fcode] ?? place.fcode}
+                    {featureTypes[place.fcode] ?? place.fclName ?? featureClasses[place.fcl ?? ''] ?? place.fcode}
                   </span>
                 </button>
               </li>

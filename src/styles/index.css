@@ -54,6 +54,16 @@ input {
   transform: rotate(45deg);
 }
 
+.nearby-marker span {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: #0f8b8d;
+  box-shadow: 0 6px 16px rgba(21, 24, 25, 0.28);
+}
+
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
   border-radius: 8px;
@@ -75,4 +85,38 @@ input {
   background: rgba(21, 24, 25, 0.92);
   color: white;
   box-shadow: 0 8px 22px rgba(21, 24, 25, 0.22);
+}
+
+.app-dark .dark-panel {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(21, 24, 25, 0.9);
+  color: #f8fafc;
+}
+
+.app-dark .dark-panel nav {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.app-dark .dark-panel article,
+.app-dark .dark-panel select,
+.app-dark .dark-panel .bg-white {
+  border-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.app-dark .dark-panel .text-ink {
+  color: #f8fafc;
+}
+
+.app-dark .dark-panel .text-slate-500,
+.app-dark .dark-panel .text-slate-600,
+.app-dark .dark-panel .text-slate-700 {
+  color: #cbd5e1;
+}
+
+.app-dark .dark-panel .bg-slate-50,
+.app-dark .dark-panel .bg-slate-100 {
+  background-color: rgba(255, 255, 255, 0.08);
 }

@@ -8,8 +8,11 @@ import {
   Layers,
   Landmark,
   Map,
+  Moon,
   Plane,
   Satellite,
+  Star,
+  Sun,
   Waves,
   BookOpenText,
   type LucideIcon,
@@ -26,7 +29,21 @@ type ControlPanelProps = {
 
 export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { selectedPlace, mapMode, overlays, setMapMode, toggleOverlay, resetMap } = useAppStore();
+  const {
+    selectedPlace,
+    mapMode,
+    darkMode,
+    favorites,
+    overlays,
+    setMapMode,
+    setDarkMode,
+    toggleOverlay,
+    toggleFavorite,
+    resetMap,
+  } = useAppStore();
+  const selectedIsFavorite = selectedPlace
+    ? favorites.some((place) => place.geonameId === selectedPlace.geonameId)
+    : false;
 
   const requirePlace = () => {
     if (selectedPlace) return true;
@@ -99,6 +116,22 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
           >
             <Satellite className="size-4" aria-hidden="true" />
             Satellite
+          </button>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button className={buttonClass(darkMode)} onClick={() => setDarkMode(!darkMode)} type="button">
+            {darkMode ? <Moon className="size-4" aria-hidden="true" /> : <Sun className="size-4" aria-hidden="true" />}
+            Theme
+          </button>
+          <button
+            className={buttonClass(selectedIsFavorite)}
+            disabled={!selectedPlace}
+            onClick={() => selectedPlace && toggleFavorite(selectedPlace)}
+            type="button"
+          >
+            <Star className="size-4" aria-hidden="true" />
+            Save
           </button>
         </div>
 

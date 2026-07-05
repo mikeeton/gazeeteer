@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import L from 'leaflet';
 import { useEffect, useMemo } from 'react';
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet';
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import toast from 'react-hot-toast';
 
 import { getAirports, getEarthquakes, getLandmarks } from '../../api/gazetteerApi';
@@ -25,8 +25,15 @@ const landmarkIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
+const nearbyIcon = L.divIcon({
+  className: 'nearby-marker',
+  html: '<span></span>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
 export function GazetteerMap() {
-  const { selectedPlace, mapMode, overlays } = useAppStore();
+  const { selectedPlace, mapMode, overlays, nearbyPlaces, route } = useAppStore();
   const { data: airports = [], isError: airportsError } = useQuery({
     queryKey: ['airports'],
     queryFn: getAirports,
@@ -144,6 +151,25 @@ export function GazetteerMap() {
             </Marker>
           ))
         : null}
+      {nearbyPlaces.map((place) => (
+        <Marker icon={nearbyIcon} key={place.id} position={[place.lat, place.lng]}>
+          <Tooltip direction="top">
+            {place.name} - {place.distanceKm} km
+          </Tooltip>
+          <Popup>
+            <strong>{place.name}</strong>
+            <p>
+              {place.category} · {place.distanceKm} km away
+            </p>
+          </Popup>
+        </Marker>
+      ))}
+      {route ? (
+        <Polyline
+          pathOptions={{ color: '#e76f51', weight: 5, opacity: 0.88 }}
+          positions={route.geometry.coordinates.map(([lng, lat]) => [lat, lng])}
+        />
+      ) : null}
     </MapContainer>
   );
 }

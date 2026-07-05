@@ -1,64 +1,78 @@
 # Gazetteer
 
-Gazetteer is an interactive React map application for exploring countries and regions. Search for a place, inspect country facts, view local weather and forecasts, compare currency information, and toggle contextual map overlays for airports, landmarks, and recent earthquakes.
+Gazetteer is a production-style React map application for exploring almost any named place in the world: countries, counties, states, cities, towns, villages, neighbourhoods, airports, landmarks, schools, hospitals, parks, rivers, lakes, mountains, islands, and other geographic features.
 
-## Features
+The app is built as a polished portfolio project with a React frontend, an Express API proxy, typed data access, cached API calls, map overlays, local persistence, responsive UI, dark mode, comparison tools, nearby-place discovery, and route planning.
 
-- Full-screen React Leaflet map with street and satellite layers
-- GeoNames-backed country, state, and county search
-- Place details from Rest Countries
-- Weather and 3-day forecast from WeatherAPI
-- USD exchange-rate lookup for the selected country's currency
-- Airport, Wikipedia landmark, and USGS earthquake overlays
-- Typed API client, cached requests with TanStack Query, Zustand map state
-- Loading states, empty states, toast feedback, and route-level error UI
-- Responsive, keyboard-friendly controls
+## Highlights
 
-## Screenshots
+- Global place search powered by GeoNames feature classes, not just countries.
+- Full-screen interactive map with street and satellite layers.
+- Support for countries, administrative areas, populated places, sites, buildings, transport locations, water features, landforms, parks, forests, and undersea features.
+- Country and place detail panels.
+- Weather, multi-day forecast, UV, wind, humidity, sunrise/sunset, and air-quality support.
+- Country comparison with population, area, density, GDP, life expectancy, internet usage, CO2, languages, currency, capital, calling code, and domains where available.
+- Statistics dashboard with Recharts visualisations.
+- Nearby places from OpenStreetMap Overpass, including cafes, restaurants, hotels, hospitals, banks, police, schools, museums, pharmacies, and parks.
+- Route planning with OSRM for driving, walking, and cycling profiles.
+- Distance information and route line rendering on the map.
+- Favorites and recent search history stored locally.
+- Street/satellite map mode switching.
+- Airport, landmark, and earthquake overlays.
+- Wikipedia integration.
+- Dark mode.
+- Responsive layout for desktop, tablet, and mobile.
+- Toast notifications, loading states, empty states, and controlled API errors.
 
-Add screenshots from a local run to `docs/screenshots/` before publishing a release.
+## Tech Stack
 
-## Technology
-
-- React 19, TypeScript, Vite
+- React 19
+- TypeScript
+- Vite
 - Tailwind CSS
 - React Router
 - React Leaflet and Leaflet
-- TanStack Query, Axios, Zustand
-- Framer Motion, React Hot Toast, Lucide React
+- TanStack Query
+- Zustand with local persistence
+- Axios
+- Framer Motion
+- React Hot Toast
 - Recharts
-- Express backend proxy
-- Vitest and Testing Library
+- Lucide React
+- Express
+- Vitest
 
-## Architecture
+## APIs And Data Sources
+
+- GeoNames: global place search, country facts, and Wikipedia landmarks
+- WeatherAPI: current weather and forecasts
+- OpenStreetMap: street map tiles and Overpass nearby-place data
+- Esri World Imagery: satellite map tiles
+- OSRM: route planning
+- World Bank: country statistics
+- USGS: recent earthquake feed
+- open.er-api.com: exchange rates
+- mwgg Airports dataset: airport overlay
+
+## Project Structure
 
 ```text
 src/
-  api/          Axios client and API functions
-  components/   Shared UI such as controls and modals
-  constants/    Static lookup tables
+  api/          Typed frontend API functions
+  components/   Shared UI, modals, panels, controls
+  constants/    Feature labels and lookup data
   features/     Map and search feature modules
   hooks/        Shared React hooks
   layouts/      Route layouts
-  pages/        Routed pages
-  store/        Zustand state
+  pages/        App pages
+  store/        Zustand state and persistence
   styles/       Tailwind and global CSS
   tests/        Unit tests
   types/        Shared TypeScript types
-server/         Express API proxy for third-party services
+  utils/        Geographic helpers
+server/
+  index.js      Express API proxy and data normalisation
 ```
-
-The browser talks to `/api/*`. The Express server owns third-party API credentials and normalizes responses before they reach React. Map tiles use public OpenStreetMap and Esri endpoints, so a tile-provider key is not required for local development.
-
-## APIs Used
-
-- OpenStreetMap and Esri for map tiles
-- GeoNames for search and landmarks
-- Rest Countries for country metadata
-- WeatherAPI for current weather and forecast data
-- open.er-api.com for exchange rates
-- USGS earthquake GeoJSON feed
-- mwgg Airports dataset
 
 ## Getting Started
 
@@ -68,21 +82,30 @@ The browser talks to `/api/*`. The Express server owns third-party API credentia
    npm install
    ```
 
-2. Create local environment variables:
+2. Create your local environment file:
 
    ```bash
    cp .env.example .env
    ```
 
-3. Fill in `GEONAMES_USER` and `WEATHER_API_KEY`.
+3. Fill in the required values:
 
-4. Run the frontend and backend:
+   ```env
+   GEONAMES_USER=your_geonames_username_here
+   WEATHER_API_KEY=your_weatherapi_key_here
+   ```
+
+4. Start the frontend and backend:
 
    ```bash
    npm run dev:full
    ```
 
-5. Open `http://localhost:5173`.
+5. Open:
+
+   ```text
+   http://localhost:5173
+   ```
 
 ## Environment Variables
 
@@ -90,48 +113,65 @@ The browser talks to `/api/*`. The Express server owns third-party API credentia
 | --- | --- | --- |
 | `PORT` | No | Express server port. Defaults to `3001`. |
 | `CLIENT_ORIGIN` | No | Allowed CORS origin. Defaults to `http://localhost:5173`. |
-| `GEONAMES_USER` | Yes | GeoNames username for search and landmark lookups. |
-| `WEATHER_API_KEY` | Yes | WeatherAPI key, used only by the backend. |
+| `GEONAMES_USER` | Yes | GeoNames username used by backend search, country, and landmark routes. |
+| `WEATHER_API_KEY` | Yes | WeatherAPI key used only by the backend. |
+
+## Available Scripts
+
+```bash
+npm run dev       # Start Vite frontend
+npm run server    # Start Express backend
+npm run dev:full  # Start both frontend and backend
+npm run lint      # Run ESLint
+npm test          # Run Vitest
+npm run build     # Type-check and build production assets
+```
 
 ## Quality Checks
+
+Before publishing or deploying, run:
 
 ```bash
 npm run lint
 npm test
 npm run build
+npm audit
 ```
 
 ## Docker
 
-Build and run both services with Docker Compose:
+Build and run with Docker Compose:
 
 ```bash
 docker compose up --build
 ```
 
-The app and API are served on `http://localhost:3001`.
+The production container serves the API and compiled frontend on:
+
+```text
+http://localhost:3001
+```
+
+## Security Notes
+
+- API keys are read from environment variables.
+- Private keys are not exposed in frontend source.
+- Third-party calls are proxied through Express.
+- User input is bounded or sanitized before being sent to upstream APIs.
+- Upstream fetches have timeouts so requests do not hang indefinitely.
+- `.env` is gitignored.
 
 ## Deployment
 
-Build the frontend with `npm run build` and deploy `dist/` to a static host. Deploy `server/index.js` as a Node service with the environment variables above. Configure the static host or reverse proxy so `/api/*` requests route to the backend.
-
-## Design Decisions
-
-- React components replace PHP modal templates so UI state remains predictable.
-- TanStack Query owns remote loading, caching, retries, and failure handling.
-- Zustand stores only app interaction state, keeping server data in the query cache.
-- The backend proxy prevents private WeatherAPI and GeoNames credentials from being embedded in the frontend.
+Run `npm run build` and deploy the generated `dist/` assets with the Express server, or host `dist/` on a static platform and route `/api/*` to the backend. Configure the environment variables above in your production host.
 
 ## Future Improvements
 
-- Add Playwright end-to-end coverage for search, overlays, and modal workflows.
-- Add screenshot assets to this README.
-- Persist user map preferences locally.
-- Add rate limiting and request caching to the Express proxy for production traffic.
-
-## Acknowledgements
-
-This project uses public data from GeoNames, Rest Countries, USGS, OpenStreetMap, Esri, WeatherAPI, open.er-api.com, and the mwgg Airports dataset.
+- Add Playwright end-to-end tests for search, route planning, and saved places.
+- Add PDF/GeoJSON export.
+- Add drawing tools for polygon and radius measurement.
+- Add server-side caching/rate limiting for heavy public APIs.
+- Add screenshots and Lighthouse results before publishing the portfolio version.
 
 ## License
 
