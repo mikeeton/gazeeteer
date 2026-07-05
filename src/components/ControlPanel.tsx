@@ -15,13 +15,16 @@ import {
   Sun,
   Waves,
   BookOpenText,
+  CloudLightning,
+  Flame,
+  Mountain,
   type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { useAppStore } from '../store/appStore';
-import type { DetailMode, OverlayKey } from '../types/app';
+import type { DetailMode, MapMode, OverlayKey } from '../types/app';
 import { featureClasses, featureTypes } from '../constants/featureTypes';
 
 type ControlPanelProps = {
@@ -111,18 +114,12 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
         id="map-controls"
       >
         <div className="grid grid-cols-2 gap-2">
-          <button className={buttonClass(mapMode === 'street')} onClick={() => setMapMode('street')} type="button">
-            <Map className="size-4" aria-hidden="true" />
-            Street
-          </button>
-          <button
-            className={buttonClass(mapMode === 'satellite')}
-            onClick={() => setMapMode('satellite')}
-            type="button"
-          >
-            <Satellite className="size-4" aria-hidden="true" />
-            Satellite
-          </button>
+          {mapModes.map(({ key, label, icon: Icon }) => (
+            <button className={buttonClass(mapMode === key)} key={key} onClick={() => setMapMode(key)} type="button">
+              <Icon className="size-4" aria-hidden="true" />
+              {label}
+            </button>
+          ))}
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -145,6 +142,10 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
           {overlayButton('airports', 'Airports', Plane)}
           {overlayButton('earthquakes', 'Earthquakes', Waves)}
           {overlayButton('landmarks', 'Landmarks', Landmark)}
+          {overlayButton('wildfires', 'Wildfires', Flame)}
+          {overlayButton('volcanoes', 'Volcanoes', Mountain)}
+          {overlayButton('storms', 'Storms', CloudLightning)}
+          {overlayButton('floods', 'Floods', Waves)}
         </div>
 
         <div className="mt-4 grid gap-2 border-t border-white/10 pt-4">
@@ -186,6 +187,14 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
     </>
   );
 }
+
+const mapModes: Array<{ key: MapMode; label: string; icon: LucideIcon }> = [
+  { key: 'street', label: 'Street', icon: Map },
+  { key: 'satellite', label: 'Satellite', icon: Satellite },
+  { key: 'terrain', label: 'Terrain', icon: Mountain },
+  { key: 'dark', label: 'Dark', icon: Moon },
+  { key: 'light', label: 'Light', icon: Sun },
+];
 
 function buttonClass(active: boolean) {
   return `inline-flex h-10 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-teal/30 ${

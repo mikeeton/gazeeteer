@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Banknote, CloudSun, Globe2, Loader2, X } from 'lucide-react';
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { getCountryInfo, getCurrencyInfo, getWeather } from '../api/gazetteerApi';
 import { featureClasses, featureTypes } from '../constants/featureTypes';
@@ -101,9 +101,12 @@ function PlaceDetails() {
     ['Region', [data.region, data.subregion].filter(Boolean).join(', ')],
     ['Population', data.population.toLocaleString()],
     ['Languages', data.languages.join(', ') || 'Not available'],
-    ['Timezone', data.timezones?.[0] ?? 'Not available'],
+    ['Timezones', data.timezones?.slice(0, 4).join(', ') || 'Not available'],
+    ['Calling code', data.callingCode || 'Not available'],
+    ['Internet domain', data.tld?.join(', ') || 'Not available'],
+    ['Driving side', data.drivingSide || 'Not available'],
     ['Coordinates', `${selectedPlace.lat.toFixed(4)}, ${selectedPlace.lng.toFixed(4)}`],
-    ['Currency', currency ? `${currency.name} (${currency.code})` : 'Not available'],
+    ['Currency', currency ? `${currency.name} (${currency.code}) ${currency.symbol}`.trim() : 'Not available'],
   ];
 
   return (
@@ -144,16 +147,19 @@ function WeatherDetails() {
   if (isError || !data) return <ErrorState label="Weather could not be loaded." />;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <Metric icon={CloudSun} label="Condition" value={data.condition.text} />
-      <Metric label="Temperature" value={`${data.temp_c} C`} />
-      <Metric label="Feels like" value={data.feelslike_c ? `${data.feelslike_c} C` : 'Unavailable'} />
-      <Metric label="Humidity" value={`${data.humidity}%`} />
-      <Metric label="Wind" value={data.wind_kph ? `${data.wind_kph} kph` : 'Unavailable'} />
-      <Metric label="UV index" value={data.uv !== undefined && data.uv !== null ? `${data.uv}` : 'Unavailable'} />
-      <Metric label="Sunrise" value={data.astro.sunrise} />
-      <Metric label="Sunset" value={data.astro.sunset} />
-      <Metric label="Source" value={data.source ?? 'Weather provider'} />
+    <div className="grid gap-5">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Metric icon={CloudSun} label="Condition" value={data.condition.text} />
+        <Metric label="Temperature" value={`${data.temp_c} C`} />
+        <Metric label="Feels like" value={data.feelslike_c ? `${data.feelslike_c} C` : 'Unavailable'} />
+        <Metric label="Humidity" value={`${data.humidity}%`} />
+        <Metric label="Wind" value={data.wind_kph ? `${data.wind_kph} kph` : 'Unavailable'} />
+        <Metric label="UV index" value={data.uv !== undefined && data.uv !== null ? `${data.uv}` : 'Unavailable'} />
+        <Metric label="Sunrise" value={data.astro.sunrise} />
+        <Metric label="Sunset" value={data.astro.sunset} />
+        <Metric label="Source" value={data.source ?? 'Weather provider'} />
+      </div>
+      {data.hourly?.length ? <HourlyWeatherCharts hourly={data.hourly} /> : null}
     </div>
   );
 }
@@ -201,6 +207,52 @@ function ForecastDetails() {
             {day.day.uv !== undefined && day.day.uv !== null ? <p className="text-sm">UV {day.day.uv}</p> : null}
           </article>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function HourlyWeatherCharts({
+  hourly,
+}: {
+  hourly: Array<{ time: string; temp_c: number; humidity: number | null; wind_kph: number | null; rainChance: number | null; uv: number | null }>;
+}) {
+  const data = hourly.slice(0, 24).map((hour) => ({
+    time: new Date(hour.time).toLocaleTimeString(undefined, { hour: '2-digit' }),
+    temp: hour.temp_c,
+    rain: hour.rainChance ?? 0,
+    wind: hour.wind_kph ?? 0,
+    uv: hour.uv ?? 0,
+  }));
+
+  return (
+    <div className="grid gap-4">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Hourly outlook</h3>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="h-52 rounded-md border border-slate-200 p-3">
+          <ResponsiveContainer height="100%" width="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+              <YAxis width={34} />
+              <Tooltip />
+              <Line dataKey="temp" dot={false} stroke="#e76f51" strokeWidth={2} />
+              <Line dataKey="wind" dot={false} stroke="#0f8b8d" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="h-52 rounded-md border border-slate-200 p-3">
+          <ResponsiveContainer height="100%" width="100%">
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+              <YAxis width={34} />
+              <Tooltip />
+              <Bar dataKey="rain" fill="#0f8b8d" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="uv" fill="#f4a261" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

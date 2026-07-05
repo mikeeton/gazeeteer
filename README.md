@@ -19,15 +19,17 @@ The app is built as a polished portfolio project with a React frontend, an Expre
 - Statistics dashboard with Recharts visualisations.
 - Nearby places from OpenStreetMap Overpass, including cafes, restaurants, hotels, hospitals, banks, police, schools, museums, pharmacies, and parks.
 - Route planning with OSRM for driving, walking, and cycling profiles.
-- Distance information and route line rendering on the map.
+- Route summary cards, direct flight distance, estimated travel time, turn-by-turn step summaries, and route line rendering on the map.
+- Drawing and measurement tools for markers, circles, rectangles, polygons, and point-to-point distances.
 - Favorites and recent search history stored locally.
-- Street/satellite map mode switching.
+- Street, satellite, terrain, dark, and light map mode switching.
 - Airport, landmark, and earthquake overlays.
+- NASA EONET disaster overlays for wildfires, volcanoes, storms, and floods.
 - Wikipedia integration.
 - Dark mode.
 - Responsive layout for desktop, tablet, and mobile.
 - Toast notifications, loading states, empty states, and controlled API errors.
-- Export selected places as JSON, route geometry as GeoJSON, and printable place reports.
+- Export selected places as JSON, route geometry and drawings as GeoJSON, printable PDF reports, and print-ready map captures.
 - Server-side TTL caching, request logging, and API rate limiting.
 
 ## Tech Stack
@@ -58,6 +60,7 @@ The app is built as a polished portfolio project with a React frontend, an Expre
 - OSRM: route planning
 - World Bank: country statistics
 - USGS: recent earthquake feed
+- NASA EONET: active wildfires, volcanoes, storms, and flood events
 - open.er-api.com: exchange rates
 - mwgg Airports dataset: airport overlay
 
@@ -167,12 +170,14 @@ http://localhost:3001
 
 - API keys are read from environment variables.
 - Private keys are not exposed in frontend source.
+- `.env.example` intentionally contains placeholders only.
 - Third-party calls are proxied through Express.
 - User input is bounded or sanitized before being sent to upstream APIs.
 - Upstream fetches have timeouts so requests do not hang indefinitely.
 - `/api/*` routes are rate-limited.
 - Expensive upstream API responses are cached in memory with short TTLs.
 - `.env` is gitignored.
+- Rotate any credentials that were ever committed, pasted into screenshots, or shared in support conversations before publishing the app.
 
 ## Deployment
 
@@ -187,11 +192,14 @@ Recommended production setup:
 - Run Express behind HTTPS and a reverse proxy.
 - Use host-level logging and error monitoring, such as Sentry, Logtail, or your platform logs.
 - Put static assets behind a CDN when traffic grows.
+- Run `docker compose up --build` locally before publishing if you plan to ship the container.
+- Keep `CLIENT_ORIGIN` locked to the deployed frontend URL and avoid wildcard CORS in production.
 
 ## Future Improvements
 
-- Add drawing tools for polygon and radius measurement.
 - Replace in-memory cache with Redis for multi-instance deployments.
+- Add provider-backed live flight and marine traffic layers when commercial API credentials are available.
+- Add true raster image export with a tile provider that permits CORS-safe canvas capture.
 - Add Lighthouse results before publishing the portfolio version.
 
 ## License

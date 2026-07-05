@@ -64,6 +64,17 @@ input {
   box-shadow: 0 6px 16px rgba(21, 24, 25, 0.28);
 }
 
+.drawing-marker span {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #ffffff;
+  border-radius: 3px;
+  background: #e76f51;
+  box-shadow: 0 6px 16px rgba(21, 24, 25, 0.28);
+  transform: rotate(45deg);
+}
+
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
   border-radius: 8px;
@@ -123,11 +134,15 @@ input {
 
 @media (max-width: 720px) {
   .explorer-panel {
-    right: 0.75rem;
-    bottom: 0.75rem;
-    left: 0.75rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
     width: auto;
-    max-height: 46vh;
+    max-height: 58vh;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 16px 16px 0 0;
   }
 
   .explorer-panel nav button {
@@ -151,6 +166,24 @@ input {
 @media (max-width: 420px) {
   .explorer-panel nav {
     overflow-x: auto;
-    grid-template-columns: repeat(6, minmax(4.5rem, 1fr));
+    grid-template-columns: repeat(7, minmax(4.5rem, 1fr));
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .control-toggle,
+  .control-panel,
+  .explorer-panel,
+  input,
+  button {
+    display: none !important;
+  }
+
+  .leaflet-container {
+    height: 100vh !important;
   }
 }

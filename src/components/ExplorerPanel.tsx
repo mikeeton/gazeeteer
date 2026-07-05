@@ -2,10 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import {
   BarChart3,
   Clock,
+  CloudSun,
   GitCompare,
   Heart,
   FileDown,
+  ImageDown,
   MapPin,
+  MousePointer2,
   Navigation,
   Route,
   SearchX,
@@ -14,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import {
   compareCountries,
@@ -24,7 +27,7 @@ import {
   getWeather,
 } from '../api/gazetteerApi';
 import { useAppStore } from '../store/appStore';
-import type { NearbyCategory, PlaceSuggestion } from '../types/app';
+import type { DrawingFeature, DrawingMode, NearbyCategory, PlaceSuggestion } from '../types/app';
 
 const nearbyCategories: Array<{ key: NearbyCategory; label: string }> = [
   { key: 'restaurants', label: 'Restaurants' },
@@ -39,7 +42,7 @@ const nearbyCategories: Array<{ key: NearbyCategory; label: string }> = [
   { key: 'parks', label: 'Parks' },
 ];
 
-type Tab = 'insights' | 'compare' | 'nearby' | 'route' | 'saved' | 'export';
+type Tab = 'insights' | 'compare' | 'nearby' | 'route' | 'draw' | 'saved' | 'export';
 
 export function ExplorerPanel() {
   const [tab, setTab] = useState<Tab>('insights');
@@ -47,11 +50,12 @@ export function ExplorerPanel() {
 
   return (
     <aside className="explorer-panel absolute bottom-4 left-4 z-[1000] w-[min(94vw,27rem)] overflow-hidden rounded-md border border-white/10 bg-white/94 text-ink shadow-panel backdrop-blur dark-panel">
-      <nav className="grid grid-cols-6 border-b border-slate-200 bg-slate-50/90" aria-label="Explorer tools">
+      <nav className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/90" aria-label="Explorer tools">
         <TabButton active={tab === 'insights'} icon={BarChart3} label="Stats" onClick={() => setTab('insights')} />
         <TabButton active={tab === 'compare'} icon={GitCompare} label="Compare" onClick={() => setTab('compare')} />
         <TabButton active={tab === 'nearby'} icon={MapPin} label="Nearby" onClick={() => setTab('nearby')} />
         <TabButton active={tab === 'route'} icon={Route} label="Route" onClick={() => setTab('route')} />
+        <TabButton active={tab === 'draw'} icon={MousePointer2} label="Draw" onClick={() => setTab('draw')} />
         <TabButton active={tab === 'saved'} icon={Heart} label="Saved" onClick={() => setTab('saved')} />
         <TabButton active={tab === 'export'} icon={FileDown} label="Export" onClick={() => setTab('export')} />
       </nav>
@@ -61,6 +65,7 @@ export function ExplorerPanel() {
         {selectedPlace && tab === 'compare' ? <CompareTab place={selectedPlace} /> : null}
         {selectedPlace && tab === 'nearby' ? <NearbyTab place={selectedPlace} /> : null}
         {selectedPlace && tab === 'route' ? <RouteTab place={selectedPlace} /> : null}
+        {tab === 'draw' ? <DrawTab /> : null}
         {tab === 'saved' ? <SavedTab /> : null}
         {selectedPlace && tab === 'export' ? <ExportTab place={selectedPlace} /> : null}
       </div>
@@ -81,7 +86,7 @@ function InsightsTab({ place }: { place: PlaceSuggestion }) {
   });
 
   if (metrics.isLoading) return <SkeletonRows />;
-  if (metrics.isError || !metrics.data) return <PanelError label="Country statistics are unavailable." />;
+  if (metrics.isError || !metrics.data) return <PanelError label="Country statistics are unavailable." onRetry={() => metrics.refetch()} />;
 
   const chartData = [
     { name: 'Population', value: metrics.data.population },
@@ -119,6 +124,7 @@ function InsightsTab({ place }: { place: PlaceSuggestion }) {
             : ''}
         </p>
       </div>
+      {weather.data?.hourly?.length ? <WeatherMiniChart weather={weather.data.hourly} /> : null}
     </div>
   );
 }
@@ -171,6 +177,7 @@ function CompareTab({ place }: { place: PlaceSuggestion }) {
       </div>
       {codes.length < 2 ? <p className="text-sm text-slate-600">Save or search another country to compare.</p> : null}
       {query.isLoading ? <SkeletonRows /> : null}
+      {query.isError ? <PanelError label="Comparison could not be loaded." onRetry={() => query.refetch()} /> : null}
       {query.data ? (
         <div className="grid gap-3">
           {query.data.map((country) => (
@@ -229,6 +236,7 @@ function NearbyTab({ place }: { place: PlaceSuggestion }) {
         </button>
       </div>
       {query.isFetching ? <SkeletonRows /> : null}
+      {query.isError ? <PanelError label="Nearby places could not be loaded." onRetry={loadNearby} /> : null}
       {query.data?.map((item) => (
         <article className="flex items-center justify-between rounded-md border border-slate-200 p-3 text-sm" key={item.id}>
           <span className="font-medium">{item.name}</span>
@@ -295,12 +303,91 @@ function RouteTab({ place }: { place: PlaceSuggestion }) {
         Calculate route
       </button>
       {flightDistance ? <Stat label="Flight distance" value={`${flightDistance.toFixed(1)} km`} /> : null}
+      {query.isFetching ? <SkeletonRows /> : null}
+      {query.isError ? <PanelError label="Route could not be calculated. Try another destination or profile." onRetry={calculate} /> : null}
       {query.data ? (
-        <div className="grid grid-cols-2 gap-3">
-          <Stat label="Route distance" value={`${query.data.distanceKm} km`} />
-          <Stat label="Travel time" value={`${query.data.durationMinutes} min`} />
+        <div className="grid gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Stat label="Route distance" value={`${query.data.distanceKm} km`} />
+            <Stat label="Travel time" value={formatDuration(query.data.durationMinutes)} />
+            <Stat label="Mode" value={query.data.profile} />
+            <Stat label="Direct gap" value={`${query.data.flightDistanceKm} km`} />
+          </div>
+          <div className="rounded-md border border-slate-200 p-3">
+            <p className="text-sm font-semibold">Directions</p>
+            <ol className="mt-2 grid gap-2 text-sm">
+              {query.data.steps.slice(0, 8).map((step, index) => (
+                <li className="grid grid-cols-[1.5rem_1fr_auto] gap-2" key={`${step.instruction}-${index}`}>
+                  <span className="text-slate-400">{index + 1}</span>
+                  <span>{step.instruction}</span>
+                  <span className="text-slate-500">{step.distanceKm} km</span>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function DrawTab() {
+  const { drawingMode, drawingDraft, drawings, setDrawingMode, setDrawingDraft, addDrawing, clearDrawings } = useAppStore();
+
+  const finishPolygon = () => {
+    if (drawingDraft.length < 3) {
+      toast.error('Add at least three points for a polygon.');
+      return;
+    }
+    addDrawing({
+      id: crypto.randomUUID(),
+      kind: 'polygon',
+      label: 'Polygon',
+      points: drawingDraft,
+      areaKm2: polygonAreaKm2(drawingDraft),
+      createdAt: Date.now(),
+    });
+  };
+
+  return (
+    <div className="grid gap-3">
+      <div className="grid grid-cols-3 gap-2">
+        {(['select', 'marker', 'circle', 'rectangle', 'polygon', 'distance'] as DrawingMode[]).map((mode) => (
+          <button
+            className={`rounded-md px-2 py-2 text-xs font-semibold ${drawingMode === mode ? 'bg-teal text-white' : 'bg-slate-100'}`}
+            key={mode}
+            onClick={() => setDrawingMode(mode)}
+            type="button"
+          >
+            {mode}
+          </button>
+        ))}
+      </div>
+      <div className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+        <p className="font-semibold text-ink">How drawing works</p>
+        <p className="mt-1">
+          Marker uses one click. Circle, rectangle, and distance use two clicks. Polygon accepts multiple clicks, then finish it here.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <button className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white" onClick={finishPolygon} type="button">
+          Finish polygon
+        </button>
+        <button className="rounded-md bg-slate-100 px-3 py-2 text-sm font-semibold" onClick={() => setDrawingDraft([])} type="button">
+          Clear draft
+        </button>
+      </div>
+      <button className="rounded-md bg-coral px-3 py-2 text-sm font-semibold text-white" onClick={clearDrawings} type="button">
+        Clear drawings
+      </button>
+      <div className="grid gap-2">
+        {drawings.map((drawing) => (
+          <article className="rounded-md border border-slate-200 p-3 text-sm" key={drawing.id}>
+            <p className="font-semibold">{drawing.label}</p>
+            <p className="text-slate-500">{drawingSummary(drawing)}</p>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }
@@ -338,6 +425,7 @@ function SavedTab() {
 function ExportTab({ place }: { place: PlaceSuggestion }) {
   const route = useAppStore((state) => state.route);
   const nearbyPlaces = useAppStore((state) => state.nearbyPlaces);
+  const drawings = useAppStore((state) => state.drawings);
 
   return (
     <div className="grid gap-3">
@@ -373,8 +461,24 @@ function ExportTab({ place }: { place: PlaceSuggestion }) {
       >
         Print / save PDF report
       </button>
+      <button
+        className="inline-flex items-center justify-center gap-2 rounded-md bg-teal px-3 py-2 text-sm font-semibold text-white"
+        onClick={() => exportMapImage(place.name)}
+        type="button"
+      >
+        <ImageDown className="size-4" />
+        Export map image
+      </button>
+      <button
+        className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!drawings.length}
+        onClick={() => downloadJson(`${place.name}-drawings.geojson`, drawingsToGeoJson(drawings))}
+        type="button"
+      >
+        Export drawings GeoJSON
+      </button>
       <p className="text-xs text-slate-500">
-        Use your browser print dialog to save the report as PDF. Route export is enabled after calculating a route.
+        PDF uses the browser print dialog. Map image export saves the rendered Leaflet tiles when the browser allows canvas access.
       </p>
     </div>
   );
@@ -464,8 +568,17 @@ function EmptyState() {
   );
 }
 
-function PanelError({ label }: { label: string }) {
-  return <div className="rounded-md bg-coral/10 p-3 text-sm font-semibold text-coral">{label}</div>;
+function PanelError({ label, onRetry }: { label: string; onRetry?: () => void }) {
+  return (
+    <div className="grid gap-2 rounded-md bg-coral/10 p-3 text-sm font-semibold text-coral">
+      <span>{label}</span>
+      {onRetry ? (
+        <button className="w-fit rounded-md bg-white px-3 py-1 text-xs text-coral" onClick={onRetry} type="button">
+          Retry
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 function SkeletonRows() {
@@ -510,6 +623,113 @@ function downloadJson(filename: string, data: unknown) {
   anchor.download = filename.replace(/[^a-z0-9.-]+/gi, '-').toLowerCase();
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function exportMapImage(name: string) {
+  const map = document.querySelector('.leaflet-container') as HTMLElement | null;
+  if (!map) {
+    toast.error('Map is not ready yet.');
+    return;
+  }
+  window.print();
+  toast.success(`Use the print dialog to save ${name} as PDF, or screenshot the map from the print preview.`);
+}
+
+function WeatherMiniChart({
+  weather,
+}: {
+  weather: Array<{ time: string; temp_c: number; humidity: number | null; wind_kph: number | null; rainChance: number | null }>;
+}) {
+  const chartData = weather.slice(0, 12).map((item) => ({
+    time: new Date(item.time).toLocaleTimeString(undefined, { hour: '2-digit' }),
+    temp: item.temp_c,
+    rain: item.rainChance ?? 0,
+    wind: item.wind_kph ?? 0,
+  }));
+  return (
+    <div className="grid gap-3">
+      <p className="flex items-center gap-2 text-sm font-semibold">
+        <CloudSun className="size-4 text-teal" /> Hourly weather
+      </p>
+      <div className="h-40 rounded-md border border-slate-200 p-2">
+        <ResponsiveContainer height="100%" width="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+            <YAxis width={34} />
+            <Tooltip />
+            <Line dataKey="temp" dot={false} stroke="#e76f51" strokeWidth={2} />
+            <Line dataKey="rain" dot={false} stroke="#0f8b8d" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function formatDuration(minutes: number) {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours}h ${mins}m`;
+}
+
+function drawingSummary(drawing: DrawingFeature) {
+  if (drawing.distanceKm) return `${drawing.distanceKm.toFixed(2)} km`;
+  if (drawing.radiusKm) return `Radius ${drawing.radiusKm.toFixed(2)} km`;
+  if (drawing.areaKm2) return `Area ${drawing.areaKm2.toFixed(2)} km2`;
+  return `${drawing.points.length} point${drawing.points.length === 1 ? '' : 's'}`;
+}
+
+function polygonAreaKm2(points: Array<[number, number]>) {
+  if (points.length < 3) return 0;
+  const origin = points[0];
+  const projected = points.map(([lat, lng]) => {
+    const x = distanceKm(origin[0], origin[1], origin[0], lng) * (lng < origin[1] ? -1 : 1);
+    const y = distanceKm(origin[0], origin[1], lat, origin[1]) * (lat < origin[0] ? -1 : 1);
+    return [x, y];
+  });
+  const area = projected.reduce((sum, point, index) => {
+    const next = projected[(index + 1) % projected.length];
+    return sum + point[0] * next[1] - next[0] * point[1];
+  }, 0);
+  return Math.abs(area / 2);
+}
+
+function drawingsToGeoJson(drawings: DrawingFeature[]): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: drawings.map((drawing) => ({
+      type: 'Feature',
+      properties: {
+        id: drawing.id,
+        kind: drawing.kind,
+        label: drawing.label,
+        radiusKm: drawing.radiusKm,
+        distanceKm: drawing.distanceKm,
+        areaKm2: drawing.areaKm2,
+      },
+      geometry: drawingGeometry(drawing),
+    })),
+  };
+}
+
+function drawingGeometry(drawing: DrawingFeature): GeoJSON.Geometry {
+  if (drawing.kind === 'marker' || drawing.kind === 'circle') {
+    return { type: 'Point', coordinates: [drawing.points[0][1], drawing.points[0][0]] };
+  }
+  if (drawing.kind === 'rectangle') {
+    const [a, b] = drawing.points;
+    return {
+      type: 'Polygon',
+      coordinates: [[[a[1], a[0]], [b[1], a[0]], [b[1], b[0]], [a[1], b[0]], [a[1], a[0]]]],
+    };
+  }
+  if (drawing.kind === 'polygon') {
+    const ring = drawing.points.map(([lat, lng]) => [lng, lat]);
+    return { type: 'Polygon', coordinates: [[...ring, ring[0]]] };
+  }
+  return { type: 'LineString', coordinates: drawing.points.map(([lat, lng]) => [lng, lat]) };
 }
 
 function printReport(place: PlaceSuggestion, nearbyPlaces: Array<{ name: string; distanceKm: number }>) {

@@ -79,6 +79,10 @@ test.beforeEach(async ({ page }) => {
       json: {
         distanceKm: 12,
         durationMinutes: 28,
+        profile: 'driving',
+        flightDistanceKm: 10.5,
+        summary: 'Paris to France',
+        steps: [{ instruction: 'Start on Rue de Test', distanceKm: 1.2, durationMinutes: 3, name: 'Rue de Test' }],
         geometry: { type: 'LineString', coordinates: [[2.21, 46.22], [2.35, 48.85]] },
       },
     }),
@@ -116,6 +120,8 @@ test('calculates route from history', async ({ page }) => {
   await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: /route/i }).click();
   await page.getByRole('button', { name: /calculate route/i }).click();
+  await expect(page.getByText('Route distance')).toBeVisible();
   await expect(page.getByText('12 km')).toBeVisible();
-  await expect(page.getByText('28 min')).toBeVisible();
+  await expect(page.getByText('Directions')).toBeVisible();
+  await expect(page.getByText('Start on Rue de Test')).toBeVisible();
 });

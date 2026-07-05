@@ -212,7 +212,7 @@ app.get('/api/disasters', async (req, res) => {
     const category = String(req.query.category ?? 'wildfires');
     const eonetCategory = eonetCategories[category] ?? eonetCategories.wildfires;
     const data = await cached(`disasters:${category}`, 1000 * 60 * 20, () =>
-      fetchJson(`https://eonet.gsfc.nasa.gov/api/v3/events?status=open&category=${eonetCategory}&limit=40`),
+      fetchJson(`https://eonet.gsfc.nasa.gov/api/v3/events?category=${eonetCategory}&limit=40`),
     );
     const events = (data.events ?? [])
       .flatMap((event) =>
@@ -394,12 +394,22 @@ async function getCountryFacts(code) {
     fetchJson(`https://secure.geonames.org/countryInfoJSON?country=${code}&username=${requireEnv('GEONAMES_USER')}`).catch(
       () => ({ geonames: [] }),
     ),
-    fetchJson(`https://restcountries.com/v3.1/alpha/${code}`).catch(() => []),
+    getCountryFallback(code),
   ]);
   const geoRaw = geoNames.geonames?.[0] ?? {};
   const restRaw = Array.isArray(restCountries) ? restCountries[0] : null;
   if (!geoRaw.countryCode && !restRaw) throw new Error('Country not found');
   return normalizeCountry(geoRaw, restRaw);
+}
+
+async function getCountryFallback(code) {
+  const restCountries = await fetchJson(`https://restcountries.com/v3.1/alpha/${code}`).catch(() => []);
+  if (Array.isArray(restCountries) && restCountries[0]?.cca2) return restCountries;
+
+  const allCountries = await cached('countries:mledoze', 1000 * 60 * 60 * 24, () =>
+    fetchJson('https://raw.githubusercontent.com/mledoze/countries/master/countries.json'),
+  );
+  return [allCountries.find((country) => country.cca2 === code || country.cca3 === code)].filter(Boolean);
 }
 
 async function getWeatherData(lat, lng, days) {
@@ -551,10 +561,11 @@ function normalizeCountry(geoRaw, restRaw) {
   const area = Number(restRaw?.area ?? geoRaw.areaInSqKm ?? 0);
   const callingRoot = restRaw?.idd?.root ?? '';
   const callingSuffix = restRaw?.idd?.suffixes?.length === 1 ? restRaw.idd.suffixes[0] : '';
+  const cca2 = restRaw?.cca2 ?? geoRaw.countryCode ?? '';
   return {
     name: restRaw?.name?.common ?? geoRaw.countryName ?? '',
     official: restRaw?.name?.official ?? geoRaw.countryName ?? '',
-    cca2: restRaw?.cca2 ?? geoRaw.countryCode ?? '',
+    cca2,
     cca3: restRaw?.cca3 ?? geoRaw.isoAlpha3 ?? '',
     flag: restRaw?.flags?.png ?? (geoRaw.countryCode ? `https://flagcdn.com/w320/${geoRaw.countryCode.toLowerCase()}.png` : ''),
     coat: restRaw?.coatOfArms?.png ?? '',
@@ -565,10 +576,10 @@ function normalizeCountry(geoRaw, restRaw) {
     area,
     languages: restRaw?.languages ? Object.values(restRaw.languages) : String(geoRaw.languages ?? '').split(',').filter(Boolean),
     currencies,
-    timezones: restRaw?.timezones ?? [],
+    timezones: restRaw?.timezones?.length ? restRaw.timezones : countryTimezoneFallback[cca2] ?? [],
     tld: restRaw?.tld ?? (geoRaw.topLevelDomain ? [geoRaw.topLevelDomain] : []),
     callingCode: callingRoot ? `${callingRoot}${callingSuffix}` : geoRaw.phone ? `+${String(geoRaw.phone).replace(/^\+/, '')}` : '',
-    drivingSide: restRaw?.car?.side ?? '',
+    drivingSide: restRaw?.car?.side ?? (leftDrivingCountries.has(cca2) ? 'left' : cca2 ? 'right' : ''),
     maps: restRaw?.maps ?? {},
   };
 }
@@ -687,6 +698,32 @@ const eonetCategories = {
   volcanoes: 'volcanoes',
   storms: 'severeStorms',
   floods: 'floods',
+};
+
+const leftDrivingCountries = new Set([
+  'AG', 'AI', 'AU', 'BB', 'BD', 'BM', 'BN', 'BS', 'BT', 'BW', 'CY', 'DM', 'FJ', 'FK', 'GB', 'GD', 'GG',
+  'GY', 'HK', 'ID', 'IE', 'IM', 'IN', 'JE', 'JM', 'JP', 'KE', 'KI', 'KN', 'KY', 'LC', 'LK', 'LS', 'MO',
+  'MS', 'MT', 'MU', 'MW', 'MY', 'MZ', 'NA', 'NP', 'NZ', 'PG', 'PK', 'PN', 'SB', 'SC', 'SG', 'SH', 'SR',
+  'SZ', 'TC', 'TH', 'TO', 'TT', 'TV', 'TZ', 'UG', 'VC', 'VG', 'VI', 'WS', 'ZA', 'ZM', 'ZW',
+]);
+
+const countryTimezoneFallback = {
+  AU: ['UTC+08:00', 'UTC+09:30', 'UTC+10:00'],
+  BR: ['UTC-05:00', 'UTC-04:00', 'UTC-03:00', 'UTC-02:00'],
+  CA: ['UTC-08:00', 'UTC-07:00', 'UTC-06:00', 'UTC-05:00', 'UTC-04:00', 'UTC-03:30'],
+  CN: ['UTC+08:00'],
+  DE: ['UTC+01:00'],
+  ES: ['UTC+01:00', 'UTC+00:00'],
+  FR: ['UTC+01:00'],
+  GB: ['UTC+00:00'],
+  IN: ['UTC+05:30'],
+  IT: ['UTC+01:00'],
+  JP: ['UTC+09:00'],
+  MX: ['UTC-08:00', 'UTC-07:00', 'UTC-06:00'],
+  NG: ['UTC+01:00'],
+  RU: ['UTC+02:00', 'UTC+03:00', 'UTC+04:00', 'UTC+05:00', 'UTC+06:00', 'UTC+07:00', 'UTC+08:00', 'UTC+09:00', 'UTC+10:00', 'UTC+11:00', 'UTC+12:00'],
+  US: ['UTC-10:00', 'UTC-09:00', 'UTC-08:00', 'UTC-07:00', 'UTC-06:00', 'UTC-05:00'],
+  ZA: ['UTC+02:00'],
 };
 
 function routeInstruction(step, index) {
