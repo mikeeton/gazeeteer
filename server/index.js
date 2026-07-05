@@ -24,20 +24,26 @@ app.get('/api/places', async (req, res) => {
   if (q.length < 2) return res.json({ geonames: [] });
 
   try {
-    const params = new URLSearchParams({
-      q,
-      maxRows: '40',
-      orderby: 'relevance',
-      style: 'FULL',
-      username: requireEnv('GEONAMES_USER'),
-    });
-    ['A', 'P', 'S', 'T', 'H', 'L', 'R', 'V', 'U'].forEach((featureClass) =>
-      params.append('featureClass', featureClass),
+    const username = requireEnv('GEONAMES_USER');
+    const responses = await Promise.all(
+      ['A', 'P', 'S', 'T', 'H', 'L', 'R', 'V', 'U'].map((featureClass) => {
+        const params = new URLSearchParams({
+          q,
+          maxRows: '12',
+          orderby: 'relevance',
+          style: 'FULL',
+          username,
+        });
+        params.append('featureClass', featureClass);
+        return fetchJson(`https://secure.geonames.org/searchJSON?${params.toString()}`).catch(() => ({
+          geonames: [],
+        }));
+      }),
     );
 
-    const data = await fetchJson(`https://secure.geonames.org/searchJSON?${params.toString()}`);
     const seen = new Set();
-    const geonames = (data.geonames ?? [])
+    const geonames = responses
+      .flatMap((data) => data.geonames ?? [])
       .map((place) => ({
         name: place.name,
         lat: Number(place.lat),
@@ -57,7 +63,13 @@ app.get('/api/places', async (req, res) => {
         seen.add(key);
         return true;
       })
-      .sort((a, b) => featureRank(a.fcode, a.fcl) - featureRank(b.fcode, b.fcl) || b.population - a.population);
+      .sort(
+        (a, b) =>
+          relevanceRank(q, a) - relevanceRank(q, b) ||
+          featureRank(a.fcode, a.fcl) - featureRank(b.fcode, b.fcl) ||
+          b.population - a.population,
+      )
+      .slice(0, 40);
 
     res.json({ geonames });
   } catch (error) {
@@ -451,6 +463,15 @@ function featureRank(fcode, fcl) {
   if (fcl === 'T') return 5;
   if (fcl === 'H') return 6;
   return 7;
+}
+
+function relevanceRank(query, place) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedName = String(place.name ?? '').trim().toLowerCase();
+  if (normalizedName === normalizedQuery) return 0;
+  if (normalizedName.startsWith(normalizedQuery)) return 1;
+  if (normalizedName.includes(normalizedQuery)) return 2;
+  return 3;
 }
 
 const overpassSelectors = {
