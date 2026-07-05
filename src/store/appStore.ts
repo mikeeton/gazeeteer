@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-import type { MapMode, NearbyPlace, OverlayKey, PlaceSuggestion, RouteSummary } from '../types/app';
+import type { DrawingFeature, DrawingMode, MapMode, NearbyPlace, OverlayKey, PlaceSuggestion, RouteSummary } from '../types/app';
 
 type AppState = {
   selectedPlace: PlaceSuggestion | null;
@@ -12,6 +12,9 @@ type AppState = {
   history: PlaceSuggestion[];
   nearbyPlaces: NearbyPlace[];
   route: RouteSummary | null;
+  drawingMode: DrawingMode;
+  drawingDraft: Array<[number, number]>;
+  drawings: DrawingFeature[];
   setSelectedPlace: (place: PlaceSuggestion | null) => void;
   setMapMode: (mode: MapMode) => void;
   setDarkMode: (enabled: boolean) => void;
@@ -19,6 +22,11 @@ type AppState = {
   toggleFavorite: (place: PlaceSuggestion) => void;
   setNearbyPlaces: (places: NearbyPlace[]) => void;
   setRoute: (route: RouteSummary | null) => void;
+  setDrawingMode: (mode: DrawingMode) => void;
+  setDrawingDraft: (points: Array<[number, number]>) => void;
+  addDrawing: (feature: DrawingFeature) => void;
+  removeDrawing: (id: string) => void;
+  clearDrawings: () => void;
   clearHistory: () => void;
   resetMap: () => void;
 };
@@ -33,10 +41,17 @@ export const useAppStore = create<AppState>()(
       history: [],
       nearbyPlaces: [],
       route: null,
+      drawingMode: 'select',
+      drawingDraft: [],
+      drawings: [],
       overlays: {
         airports: false,
         earthquakes: false,
         landmarks: false,
+        wildfires: false,
+        volcanoes: false,
+        storms: false,
+        floods: false,
       },
       setSelectedPlace: (place) =>
         set((state) => ({
@@ -61,12 +76,29 @@ export const useAppStore = create<AppState>()(
       },
       setNearbyPlaces: (places) => set({ nearbyPlaces: places }),
       setRoute: (route) => set({ route }),
+      setDrawingMode: (mode) => set({ drawingMode: mode, drawingDraft: [] }),
+      setDrawingDraft: (points) => set({ drawingDraft: points }),
+      addDrawing: (feature) =>
+        set((state) => ({
+          drawings: [feature, ...state.drawings].slice(0, 48),
+          drawingDraft: [],
+        })),
+      removeDrawing: (id) => set((state) => ({ drawings: state.drawings.filter((item) => item.id !== id) })),
+      clearDrawings: () => set({ drawings: [], drawingDraft: [] }),
       clearHistory: () => set({ history: [] }),
       resetMap: () =>
         set({
           selectedPlace: null,
           mapMode: 'street',
-          overlays: { airports: false, earthquakes: false, landmarks: false },
+          overlays: {
+            airports: false,
+            earthquakes: false,
+            landmarks: false,
+            wildfires: false,
+            volcanoes: false,
+            storms: false,
+            floods: false,
+          },
         }),
     }),
     {

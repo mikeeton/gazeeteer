@@ -7,6 +7,7 @@ import type {
   CountryMetric,
   CurrencyInfo,
   EarthquakeFeature,
+  DisasterEvent,
   Landmark,
   NearbyCategory,
   NearbyPlace,
@@ -113,4 +114,9 @@ export async function getRoute(
 export async function getEarthquakes(): Promise<EarthquakeFeature[]> {
   const { data } = await apiClient.get<GeoJSON.FeatureCollection<GeoJSON.Point>>('/earthquakes');
   return (data.features ?? []) as EarthquakeFeature[];
+}
+
+export async function getDisasters(category: DisasterEvent['category']): Promise<DisasterEvent[]> {
+  const { data } = await apiClient.get<{ events: DisasterEvent[] }>('/disasters', { params: { category } });
+  return data.events;
 }

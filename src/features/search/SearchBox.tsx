@@ -12,6 +12,7 @@ export function SearchBox() {
   const listId = useId();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const debouncedQuery = useDebouncedValue(query.trim(), 300);
   const setSelectedPlace = useAppStore((state) => state.setSelectedPlace);
 
@@ -24,6 +25,10 @@ export function SearchBox() {
   useEffect(() => {
     if (isError) toast.error('Place search is unavailable right now.');
   }, [isError]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [debouncedQuery]);
 
   const choosePlace = (index: number) => {
     const place = data[index];
@@ -50,9 +55,17 @@ export function SearchBox() {
           onFocus={() => data.length > 0 && setIsOpen(true)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setIsOpen(false);
-            if (event.key === 'Enter' && data.length > 0) choosePlace(0);
+            if (event.key === 'ArrowDown') {
+              event.preventDefault();
+              setActiveIndex((index) => Math.min(index + 1, data.length - 1));
+            }
+            if (event.key === 'ArrowUp') {
+              event.preventDefault();
+              setActiveIndex((index) => Math.max(index - 1, 0));
+            }
+            if (event.key === 'Enter' && data.length > 0) choosePlace(activeIndex);
           }}
-          placeholder="Search any country, county, city, landmark, airport, river, mountain..."
+          placeholder="Search any place, city, county, country, airport, river..."
           role="combobox"
           type="search"
           value={query}
@@ -86,14 +99,21 @@ export function SearchBox() {
             {data.map((place, index) => (
               <li key={`${place.geonameId}-${place.name}`} role="option">
                 <button
-                  className="flex w-full items-center justify-between gap-4 rounded-md px-4 py-3 text-left transition hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+                  className={`flex w-full items-center justify-between gap-4 rounded-md px-4 py-3 text-left transition hover:bg-white/10 focus:bg-white/10 focus:outline-none ${
+                    activeIndex === index ? 'bg-white/10' : ''
+                  }`}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => choosePlace(index)}
+                  onMouseEnter={() => setActiveIndex(index)}
                   type="button"
                 >
                   <span>
                     <span className="block text-sm font-semibold text-white">{place.name}</span>
-                    <span className="text-xs text-slate-300">{place.countryName}</span>
+                    <span className="text-xs text-slate-300">
+                      {[place.countryName, place.population ? `${place.population.toLocaleString()} people` : '']
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
                   </span>
                   <span className="shrink-0 text-xs font-medium text-gold">
                     {featureTypes[place.fcode] ?? place.fclName ?? featureClasses[place.fcl ?? ''] ?? place.fcode}

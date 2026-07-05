@@ -22,6 +22,7 @@ import toast from 'react-hot-toast';
 
 import { useAppStore } from '../store/appStore';
 import type { DetailMode, OverlayKey } from '../types/app';
+import { featureClasses, featureTypes } from '../constants/featureTypes';
 
 type ControlPanelProps = {
   onOpenDetail: (mode: DetailMode) => void;
@@ -62,10 +63,15 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
 
   const openWikipedia = () => {
     if (!requirePlace() || !selectedPlace) return;
+    const featureLabel =
+      featureTypes[selectedPlace.fcode] ??
+      selectedPlace.fclName ??
+      featureClasses[selectedPlace.fcl ?? ''] ??
+      selectedPlace.fcode;
     const url = selectedPlace.wikipediaUrl
       ? `https://${selectedPlace.wikipediaUrl}`
       : `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(
-          `${selectedPlace.name}, ${selectedPlace.countryName}`,
+          `${selectedPlace.name} ${selectedPlace.countryName} ${featureLabel}`,
         )}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -91,7 +97,7 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
         aria-controls="map-controls"
         aria-expanded={isOpen}
         aria-label="Toggle map controls"
-        className="absolute right-4 top-4 z-[1000] grid size-12 place-items-center rounded-md bg-ink/90 text-white shadow-panel backdrop-blur transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-teal/30"
+        className="control-toggle absolute right-4 top-4 z-[1000] grid size-12 place-items-center rounded-md bg-ink/90 text-white shadow-panel backdrop-blur transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-teal/30"
         onClick={() => setIsOpen((value) => !value)}
         type="button"
       >
@@ -99,7 +105,7 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
       </button>
 
       <aside
-        className={`absolute right-4 top-20 z-[1000] w-[min(92vw,18rem)] rounded-md border border-white/10 bg-ink/90 p-4 text-white shadow-panel backdrop-blur transition duration-200 ${
+        className={`control-panel absolute right-4 top-20 z-[1000] w-[min(92vw,18rem)] rounded-md border border-white/10 bg-ink/90 p-4 text-white shadow-panel backdrop-blur transition duration-200 ${
           isOpen ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0 pointer-events-none'
         }`}
         id="map-controls"

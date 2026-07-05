@@ -4,6 +4,10 @@ Gazetteer is a production-style React map application for exploring almost any n
 
 The app is built as a polished portfolio project with a React frontend, an Express API proxy, typed data access, cached API calls, map overlays, local persistence, responsive UI, dark mode, comparison tools, nearby-place discovery, and route planning.
 
+## Screenshot
+
+![Gazetteer home screen](docs/screenshots/gazetteer-home.png)
+
 ## Highlights
 
 - Global place search powered by GeoNames feature classes, not just countries.
@@ -23,6 +27,8 @@ The app is built as a polished portfolio project with a React frontend, an Expre
 - Dark mode.
 - Responsive layout for desktop, tablet, and mobile.
 - Toast notifications, loading states, empty states, and controlled API errors.
+- Export selected places as JSON, route geometry as GeoJSON, and printable place reports.
+- Server-side TTL caching, request logging, and API rate limiting.
 
 ## Tech Stack
 
@@ -46,6 +52,7 @@ The app is built as a polished portfolio project with a React frontend, an Expre
 
 - GeoNames: global place search, country facts, and Wikipedia landmarks
 - WeatherAPI: current weather and forecasts
+- Open-Meteo: no-key weather fallback when WeatherAPI credentials fail
 - OpenStreetMap: street map tiles and Overpass nearby-place data
 - Esri World Imagery: satellite map tiles
 - OSRM: route planning
@@ -113,6 +120,8 @@ server/
 | --- | --- | --- |
 | `PORT` | No | Express server port. Defaults to `3001`. |
 | `CLIENT_ORIGIN` | No | Allowed CORS origin. Defaults to `http://localhost:5173`. |
+| `API_RATE_LIMIT_PER_MINUTE` | No | Per-IP API request limit. Defaults to `120`. |
+| `NODE_ENV` | No | Use `production` in deployed environments. |
 | `GEONAMES_USER` | Yes | GeoNames username used by backend search, country, and landmark routes. |
 | `WEATHER_API_KEY` | Yes | WeatherAPI key used only by the backend. |
 
@@ -124,6 +133,7 @@ npm run server    # Start Express backend
 npm run dev:full  # Start both frontend and backend
 npm run lint      # Run ESLint
 npm test          # Run Vitest
+npm run test:e2e  # Run Playwright end-to-end tests
 npm run build     # Type-check and build production assets
 ```
 
@@ -134,6 +144,7 @@ Before publishing or deploying, run:
 ```bash
 npm run lint
 npm test
+npm run test:e2e
 npm run build
 npm audit
 ```
@@ -159,19 +170,29 @@ http://localhost:3001
 - Third-party calls are proxied through Express.
 - User input is bounded or sanitized before being sent to upstream APIs.
 - Upstream fetches have timeouts so requests do not hang indefinitely.
+- `/api/*` routes are rate-limited.
+- Expensive upstream API responses are cached in memory with short TTLs.
 - `.env` is gitignored.
 
 ## Deployment
 
 Run `npm run build` and deploy the generated `dist/` assets with the Express server, or host `dist/` on a static platform and route `/api/*` to the backend. Configure the environment variables above in your production host.
 
+Recommended production setup:
+
+- Rotate GeoNames and WeatherAPI credentials before publishing.
+- Set `NODE_ENV=production`.
+- Set `CLIENT_ORIGIN` to the deployed frontend origin.
+- Tune `API_RATE_LIMIT_PER_MINUTE` for expected traffic.
+- Run Express behind HTTPS and a reverse proxy.
+- Use host-level logging and error monitoring, such as Sentry, Logtail, or your platform logs.
+- Put static assets behind a CDN when traffic grows.
+
 ## Future Improvements
 
-- Add Playwright end-to-end tests for search, route planning, and saved places.
-- Add PDF/GeoJSON export.
 - Add drawing tools for polygon and radius measurement.
-- Add server-side caching/rate limiting for heavy public APIs.
-- Add screenshots and Lighthouse results before publishing the portfolio version.
+- Replace in-memory cache with Redis for multi-instance deployments.
+- Add Lighthouse results before publishing the portfolio version.
 
 ## License
 

@@ -4,6 +4,7 @@ import {
   Clock,
   GitCompare,
   Heart,
+  FileDown,
   MapPin,
   Navigation,
   Route,
@@ -38,20 +39,21 @@ const nearbyCategories: Array<{ key: NearbyCategory; label: string }> = [
   { key: 'parks', label: 'Parks' },
 ];
 
-type Tab = 'insights' | 'compare' | 'nearby' | 'route' | 'saved';
+type Tab = 'insights' | 'compare' | 'nearby' | 'route' | 'saved' | 'export';
 
 export function ExplorerPanel() {
   const [tab, setTab] = useState<Tab>('insights');
   const selectedPlace = useAppStore((state) => state.selectedPlace);
 
   return (
-    <aside className="absolute bottom-4 left-4 z-[1000] w-[min(94vw,27rem)] overflow-hidden rounded-md border border-white/10 bg-white/94 text-ink shadow-panel backdrop-blur dark-panel">
-      <nav className="grid grid-cols-5 border-b border-slate-200 bg-slate-50/90" aria-label="Explorer tools">
+    <aside className="explorer-panel absolute bottom-4 left-4 z-[1000] w-[min(94vw,27rem)] overflow-hidden rounded-md border border-white/10 bg-white/94 text-ink shadow-panel backdrop-blur dark-panel">
+      <nav className="grid grid-cols-6 border-b border-slate-200 bg-slate-50/90" aria-label="Explorer tools">
         <TabButton active={tab === 'insights'} icon={BarChart3} label="Stats" onClick={() => setTab('insights')} />
         <TabButton active={tab === 'compare'} icon={GitCompare} label="Compare" onClick={() => setTab('compare')} />
         <TabButton active={tab === 'nearby'} icon={MapPin} label="Nearby" onClick={() => setTab('nearby')} />
         <TabButton active={tab === 'route'} icon={Route} label="Route" onClick={() => setTab('route')} />
         <TabButton active={tab === 'saved'} icon={Heart} label="Saved" onClick={() => setTab('saved')} />
+        <TabButton active={tab === 'export'} icon={FileDown} label="Export" onClick={() => setTab('export')} />
       </nav>
       <div className="max-h-[42vh] overflow-y-auto p-4 md:max-h-[56vh]">
         {!selectedPlace && tab !== 'saved' ? <EmptyState /> : null}
@@ -60,6 +62,7 @@ export function ExplorerPanel() {
         {selectedPlace && tab === 'nearby' ? <NearbyTab place={selectedPlace} /> : null}
         {selectedPlace && tab === 'route' ? <RouteTab place={selectedPlace} /> : null}
         {tab === 'saved' ? <SavedTab /> : null}
+        {selectedPlace && tab === 'export' ? <ExportTab place={selectedPlace} /> : null}
       </div>
     </aside>
   );
@@ -179,9 +182,11 @@ function CompareTab({ place }: { place: PlaceSuggestion }) {
               <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <MiniRow label="Population" value={formatCompact(country.population)} />
                 <MiniRow label="GDP" value={country.gdpUsd ? `$${formatCompact(country.gdpUsd)}` : 'No data'} />
-                <MiniRow label="Life exp." value={country.lifeExpectancy ? `${country.lifeExpectancy}` : 'No data'} />
-                <MiniRow label="Internet" value={country.internetUsersPct ? `${country.internetUsersPct}%` : 'No data'} />
-              </dl>
+        <MiniRow label="Life exp." value={country.lifeExpectancy ? `${country.lifeExpectancy}` : 'No data'} />
+        <MiniRow label="Internet" value={country.internetUsersPct ? `${country.internetUsersPct}%` : 'No data'} />
+        <MiniRow label="Literacy" value={country.literacyPct ? `${country.literacyPct}%` : 'No data'} />
+        <MiniRow label="Inflation" value={country.inflationPct ? `${country.inflationPct}%` : 'No data'} />
+      </dl>
             </article>
           ))}
         </div>
@@ -330,6 +335,51 @@ function SavedTab() {
   );
 }
 
+function ExportTab({ place }: { place: PlaceSuggestion }) {
+  const route = useAppStore((state) => state.route);
+  const nearbyPlaces = useAppStore((state) => state.nearbyPlaces);
+
+  return (
+    <div className="grid gap-3">
+      <button
+        className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white"
+        onClick={() => downloadJson(`${place.name}-place.json`, place)}
+        type="button"
+      >
+        Export selected place JSON
+      </button>
+      <button
+        className="rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!route}
+        onClick={() =>
+          route &&
+          downloadJson(`${place.name}-route.geojson`, {
+            type: 'Feature',
+            properties: {
+              distanceKm: route.distanceKm,
+              durationMinutes: route.durationMinutes,
+            },
+            geometry: route.geometry,
+          })
+        }
+        type="button"
+      >
+        Export current route GeoJSON
+      </button>
+      <button
+        className="rounded-md bg-teal px-3 py-2 text-sm font-semibold text-white"
+        onClick={() => printReport(place, nearbyPlaces)}
+        type="button"
+      >
+        Print / save PDF report
+      </button>
+      <p className="text-xs text-slate-500">
+        Use your browser print dialog to save the report as PDF. Route export is enabled after calculating a route.
+      </p>
+    </div>
+  );
+}
+
 function SavedList({
   icon: Icon,
   label,
@@ -450,4 +500,62 @@ function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
     Math.sin(deltaLat / 2) ** 2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(deltaLon / 2) ** 2;
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function downloadJson(filename: string, data: unknown) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename.replace(/[^a-z0-9.-]+/gi, '-').toLowerCase();
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function printReport(place: PlaceSuggestion, nearbyPlaces: Array<{ name: string; distanceKm: number }>) {
+  const report = window.open('', '_blank', 'noopener,noreferrer');
+  if (!report) {
+    toast.error('Popup blocked. Allow popups to print reports.');
+    return;
+  }
+  report.document.write(`
+    <html>
+      <head>
+        <title>${escapeHtml(place.name)} Gazetteer Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 32px; color: #151819; }
+          h1 { margin-bottom: 4px; }
+          dl { display: grid; grid-template-columns: 160px 1fr; gap: 8px; }
+          dt { font-weight: 700; }
+          li { margin: 4px 0; }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(place.name)}</h1>
+        <p>${escapeHtml(place.countryName || 'Unknown country')}</p>
+        <dl>
+          <dt>Feature</dt><dd>${escapeHtml(place.fcode)}</dd>
+          <dt>Coordinates</dt><dd>${place.lat.toFixed(5)}, ${place.lng.toFixed(5)}</dd>
+          <dt>GeoNames ID</dt><dd>${escapeHtml(String(place.geonameId ?? 'Unavailable'))}</dd>
+        </dl>
+        <h2>Nearby Places</h2>
+        <ul>${nearbyPlaces.map((item) => `<li>${escapeHtml(item.name)} - ${item.distanceKm} km</li>`).join('')}</ul>
+      </body>
+    </html>
+  `);
+  report.document.close();
+  report.print();
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return entities[character];
+  });
 }

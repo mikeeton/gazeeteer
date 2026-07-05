@@ -1,6 +1,8 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
+import morgan from 'morgan';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,6 +16,17 @@ const distPath = path.resolve(__dirname, '../dist');
 
 app.use(cors({ origin: clientOrigin }));
 app.use(express.json());
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(
+  '/api',
+  rateLimit({
+    windowMs: 60_000,
+    limit: Number(process.env.API_RATE_LIMIT_PER_MINUTE ?? 120),
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Please slow down and try again shortly.' },
+  }),
+);
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
@@ -25,7 +38,8 @@ app.get('/api/places', async (req, res) => {
 
   try {
     const username = requireEnv('GEONAMES_USER');
-    const responses = await Promise.all(
+    const responses = await cached(`places:${q.toLowerCase()}`, 1000 * 60 * 10, () =>
+      Promise.all(
       ['A', 'P', 'S', 'T', 'H', 'L', 'R', 'V', 'U'].map((featureClass) => {
         const params = new URLSearchParams({
           q,
@@ -39,6 +53,7 @@ app.get('/api/places', async (req, res) => {
           geonames: [],
         }));
       }),
+      ),
     );
 
     const seen = new Set();
@@ -85,7 +100,7 @@ app.get('/api/countries/compare', async (req, res) => {
       .filter(Boolean)
       .slice(0, 4);
     if (codes.length < 2) return res.status(400).json({ error: 'Choose at least two countries' });
-    res.json(await Promise.all(codes.map((code) => getCountryMetric(code))));
+    res.json(await cached(`compare:${codes.join(',')}`, 1000 * 60 * 60 * 6, () => Promise.all(codes.map((code) => getCountryMetric(code)))));
   } catch (error) {
     sendError(res, error, 'Country comparison failed');
   }
@@ -93,7 +108,8 @@ app.get('/api/countries/compare', async (req, res) => {
 
 app.get('/api/countries/:code/metrics', async (req, res) => {
   try {
-    res.json(await getCountryMetric(sanitizeCountryCode(req.params.code)));
+    const code = sanitizeCountryCode(req.params.code);
+    res.json(await cached(`metrics:${code}`, 1000 * 60 * 60 * 12, () => getCountryMetric(code)));
   } catch (error) {
     sendError(res, error, 'Country metrics failed');
   }
@@ -102,7 +118,7 @@ app.get('/api/countries/:code/metrics', async (req, res) => {
 app.get('/api/countries/:code', async (req, res) => {
   try {
     const code = sanitizeCountryCode(req.params.code);
-    res.json(await getCountryFacts(code));
+    res.json(await cached(`country:${code}`, 1000 * 60 * 60 * 24, () => getCountryFacts(code)));
   } catch (error) {
     sendError(res, error, 'Country lookup failed');
   }
@@ -113,7 +129,7 @@ app.get('/api/currency/convert', async (req, res) => {
     const from = sanitizeCurrencyCode(req.query.from);
     const to = sanitizeCurrencyCode(req.query.to);
     const amount = Math.max(0, Math.min(Number(req.query.amount ?? 1), 1_000_000));
-    const data = await fetchJson(`https://open.er-api.com/v6/latest/${from}`);
+    const data = await cached(`rates:${from}`, 1000 * 60 * 60, () => fetchJson(`https://open.er-api.com/v6/latest/${from}`));
     const rate = data.rates?.[to];
     if (!rate) return res.status(404).json({ error: 'Conversion rate not available' });
     res.json({ from, to, amount, rate, result: amount * rate });
@@ -125,15 +141,15 @@ app.get('/api/currency/convert', async (req, res) => {
 app.get('/api/currency/:code', async (req, res) => {
   try {
     const code = sanitizeCountryCode(req.params.code);
-    const country = await getCountryFacts(code);
+    const country = await cached(`country:${code}`, 1000 * 60 * 60 * 24, () => getCountryFacts(code));
     const currencyCode = country.currencies[0]?.code;
     if (!currencyCode) return res.status(404).json({ error: 'Currency not found' });
     const rate = await getUsdRate(currencyCode);
 
     res.json({
       currency: currencyCode,
-      name: currencyCode,
-      symbol: '',
+      name: country.currencies[0]?.name ?? currencyCode,
+      symbol: country.currencies[0]?.symbol ?? '',
       rate,
     });
   } catch (error) {
@@ -150,26 +166,11 @@ app.get('/api/weather', async (req, res) => {
       return res.status(400).json({ error: 'Missing or invalid lat/lng' });
     }
 
-    const params = new URLSearchParams({
-      key: requireEnv('WEATHER_API_KEY'),
-      q: `${lat},${lng}`,
-      days: String(days),
-      aqi: 'yes',
-      alerts: 'no',
-    });
-    const data = await fetchJson(`https://api.weatherapi.com/v1/forecast.json?${params.toString()}`);
+    const data = await cached(`weather:${lat.toFixed(4)}:${lng.toFixed(4)}:${days}`, 1000 * 60 * 20, () =>
+      getWeatherData(lat, lng, days),
+    );
 
-    res.json({
-      condition: data.current.condition,
-      temp_c: data.current.temp_c,
-      feelslike_c: data.current.feelslike_c,
-      humidity: data.current.humidity,
-      wind_kph: data.current.wind_kph,
-      uv: data.current.uv,
-      air_quality: data.current.air_quality,
-      astro: data.forecast.forecastday[0].astro,
-      forecast: data.forecast,
-    });
+    res.json(data);
   } catch (error) {
     sendError(res, error, 'Weather lookup failed');
   }
@@ -177,7 +178,9 @@ app.get('/api/weather', async (req, res) => {
 
 app.get('/api/airports', async (_req, res) => {
   try {
-    const data = await fetchJson('https://raw.githubusercontent.com/mwgg/Airports/master/airports.json');
+    const data = await cached('airports:all', 1000 * 60 * 60 * 24, () =>
+      fetchJson('https://raw.githubusercontent.com/mwgg/Airports/master/airports.json'),
+    );
     const airports = Object.entries(data)
       .map(([id, airport]) => ({
         id,
@@ -204,6 +207,35 @@ app.get('/api/earthquakes', async (_req, res) => {
   }
 });
 
+app.get('/api/disasters', async (req, res) => {
+  try {
+    const category = String(req.query.category ?? 'wildfires');
+    const eonetCategory = eonetCategories[category] ?? eonetCategories.wildfires;
+    const data = await cached(`disasters:${category}`, 1000 * 60 * 20, () =>
+      fetchJson(`https://eonet.gsfc.nasa.gov/api/v3/events?status=open&category=${eonetCategory}&limit=40`),
+    );
+    const events = (data.events ?? [])
+      .flatMap((event) =>
+        (event.geometry ?? []).slice(-1).map((geometry) => {
+          const [lng, lat] = geometry.coordinates ?? [];
+          return {
+            id: event.id,
+            title: event.title,
+            category,
+            lat: Number(lat),
+            lng: Number(lng),
+            date: geometry.date ?? event.closed ?? '',
+            source: event.sources?.[0]?.id ?? 'NASA EONET',
+          };
+        }),
+      )
+      .filter((event) => Number.isFinite(event.lat) && Number.isFinite(event.lng));
+    res.json({ events });
+  } catch (error) {
+    sendError(res, error, 'Disaster feed failed');
+  }
+});
+
 app.get('/api/landmarks', async (req, res) => {
   try {
     const fcode = String(req.query.fcode ?? '');
@@ -227,7 +259,7 @@ app.get('/api/landmarks', async (req, res) => {
             username,
           }).toString()}`;
 
-    const data = await fetchJson(url);
+    const data = await cached(`landmarks:${fcode}:${countryCode}:${lat}:${lng}`, 1000 * 60 * 60, () => fetchJson(url));
     const geonames = (data.geonames ?? [])
       .map((place) => ({
         title: place.title ?? place.name ?? 'Landmark',
@@ -251,11 +283,11 @@ app.get('/api/nearby', async (req, res) => {
     const category = String(req.query.category ?? 'restaurants');
     const selector = overpassSelectors[category] ?? overpassSelectors.restaurants;
     const query = `[out:json][timeout:12];(node[${selector}](around:3500,${lat},${lng});way[${selector}](around:3500,${lat},${lng}););out center 40;`;
-    const data = await fetchJson('https://overpass-api.de/api/interpreter', {
+    const data = await cached(`nearby:${category}:${lat.toFixed(4)}:${lng.toFixed(4)}`, 1000 * 60 * 15, () => fetchJson('https://overpass-api.de/api/interpreter', {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': 'Gazetteer/1.0' },
       body: `data=${encodeURIComponent(query)}`,
-    });
+    }));
     const places = (data.elements ?? [])
       .map((item) => {
         const placeLat = Number(item.lat ?? item.center?.lat);
@@ -286,13 +318,23 @@ app.get('/api/route', async (req, res) => {
     const toLng = clamp(Number(req.query.toLng), -180, 180);
     const profile = String(req.query.profile ?? 'driving');
     const osrmProfile = profile === 'walking' ? 'foot' : profile === 'cycling' ? 'bike' : 'car';
-    const url = `https://router.project-osrm.org/route/v1/${osrmProfile}/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+    const url = `https://router.project-osrm.org/route/v1/${osrmProfile}/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson&steps=true`;
     const data = await fetchJson(url);
     const route = data.routes?.[0];
     if (!route) return res.status(404).json({ error: 'No route found' });
+    const steps = route.legs?.flatMap((leg) => leg.steps ?? []) ?? [];
     res.json({
       distanceKm: Number((route.distance / 1000).toFixed(2)),
       durationMinutes: Number((route.duration / 60).toFixed(0)),
+      profile: ['driving', 'walking', 'cycling'].includes(profile) ? profile : 'driving',
+      flightDistanceKm: Number(distanceKm(fromLat, fromLng, toLat, toLng).toFixed(2)),
+      summary: route.legs?.[0]?.summary || `${humanize(profile)} route`,
+      steps: steps.slice(0, 18).map((step, index) => ({
+        instruction: routeInstruction(step, index),
+        distanceKm: Number((step.distance / 1000).toFixed(2)),
+        durationMinutes: Number((step.duration / 60).toFixed(0)),
+        name: step.name ?? '',
+      })),
       geometry: route.geometry,
     });
   } catch (error) {
@@ -326,9 +368,21 @@ async function fetchJson(url, init = {}) {
   return response.json();
 }
 
+const cacheStore = new Map();
+
+async function cached(key, ttlMs, loader) {
+  const now = Date.now();
+  const cachedValue = cacheStore.get(key);
+  if (cachedValue && cachedValue.expiresAt > now) return cachedValue.value;
+
+  const value = await loader();
+  cacheStore.set(key, { value, expiresAt: now + ttlMs });
+  return value;
+}
+
 async function getUsdRate(currencyCode) {
   try {
-    const data = await fetchJson(`https://open.er-api.com/v6/latest/USD`);
+    const data = await cached('rates:USD', 1000 * 60 * 60, () => fetchJson('https://open.er-api.com/v6/latest/USD'));
     return data.rates?.[currencyCode] ?? null;
   } catch {
     return null;
@@ -336,12 +390,140 @@ async function getUsdRate(currencyCode) {
 }
 
 async function getCountryFacts(code) {
-  const data = await fetchJson(
-    `https://secure.geonames.org/countryInfoJSON?country=${code}&username=${requireEnv('GEONAMES_USER')}`,
-  );
-  const raw = data.geonames?.[0];
-  if (!raw) throw new Error('Country not found');
-  return normalizeGeoNamesCountry(raw);
+  const [geoNames, restCountries] = await Promise.all([
+    fetchJson(`https://secure.geonames.org/countryInfoJSON?country=${code}&username=${requireEnv('GEONAMES_USER')}`).catch(
+      () => ({ geonames: [] }),
+    ),
+    fetchJson(`https://restcountries.com/v3.1/alpha/${code}`).catch(() => []),
+  ]);
+  const geoRaw = geoNames.geonames?.[0] ?? {};
+  const restRaw = Array.isArray(restCountries) ? restCountries[0] : null;
+  if (!geoRaw.countryCode && !restRaw) throw new Error('Country not found');
+  return normalizeCountry(geoRaw, restRaw);
+}
+
+async function getWeatherData(lat, lng, days) {
+  try {
+    const weatherApiKey = process.env.WEATHER_API_KEY;
+    if (weatherApiKey) {
+      const params = new URLSearchParams({
+        key: weatherApiKey,
+        q: `${lat},${lng}`,
+        days: String(days),
+        aqi: 'yes',
+        alerts: 'no',
+      });
+      const data = await fetchJson(`https://api.weatherapi.com/v1/forecast.json?${params.toString()}`);
+      return {
+        source: 'WeatherAPI',
+        condition: data.current.condition,
+        temp_c: data.current.temp_c,
+        feelslike_c: data.current.feelslike_c,
+        humidity: data.current.humidity,
+        wind_kph: data.current.wind_kph,
+        uv: data.current.uv,
+        air_quality: data.current.air_quality,
+        astro: data.forecast.forecastday[0].astro,
+        forecast: data.forecast,
+        hourly: (data.forecast.forecastday[0]?.hour ?? []).slice(0, 24).map((hour) => ({
+          time: hour.time,
+          temp_c: hour.temp_c,
+          humidity: hour.humidity ?? null,
+          wind_kph: hour.wind_kph ?? null,
+          rainChance: hour.chance_of_rain ?? null,
+          uv: hour.uv ?? null,
+        })),
+      };
+    }
+  } catch {
+    // Fall through to Open-Meteo when the configured WeatherAPI key is invalid or exhausted.
+  }
+
+  return getOpenMeteoWeather(lat, lng, days);
+}
+
+async function getOpenMeteoWeather(lat, lng, days) {
+  const params = new URLSearchParams({
+    latitude: String(lat),
+    longitude: String(lng),
+    current: 'temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code',
+    hourly: 'temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation_probability,uv_index',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max',
+    timezone: 'auto',
+    forecast_days: String(days),
+  });
+  const data = await fetchJson(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+  const forecastday = data.daily.time.map((date, index) => ({
+    date,
+    astro: {
+      sunrise: formatTime(data.daily.sunrise[index]),
+      sunset: formatTime(data.daily.sunset[index]),
+    },
+    day: {
+      maxtemp_c: data.daily.temperature_2m_max[index],
+      mintemp_c: data.daily.temperature_2m_min[index],
+      daily_chance_of_rain: data.daily.precipitation_probability_max?.[index] ?? 0,
+      uv: data.daily.uv_index_max?.[index] ?? null,
+      condition: {
+        text: weatherCodeLabel(data.daily.weather_code[index]),
+        icon: '',
+      },
+    },
+  }));
+
+  return {
+    source: 'Open-Meteo',
+    condition: {
+      text: weatherCodeLabel(data.current.weather_code),
+      icon: '',
+    },
+    temp_c: data.current.temperature_2m,
+    feelslike_c: data.current.apparent_temperature,
+    humidity: data.current.relative_humidity_2m,
+    wind_kph: data.current.wind_speed_10m,
+    uv: data.daily.uv_index_max?.[0] ?? null,
+    air_quality: null,
+    astro: forecastday[0]?.astro ?? { sunrise: 'Unavailable', sunset: 'Unavailable' },
+    forecast: { forecastday },
+    hourly: (data.hourly?.time ?? []).slice(0, 24).map((time, index) => ({
+      time,
+      temp_c: data.hourly.temperature_2m[index],
+      humidity: data.hourly.relative_humidity_2m?.[index] ?? null,
+      wind_kph: data.hourly.wind_speed_10m?.[index] ?? null,
+      rainChance: data.hourly.precipitation_probability?.[index] ?? null,
+      uv: data.hourly.uv_index?.[index] ?? null,
+    })),
+  };
+}
+
+function weatherCodeLabel(code) {
+  const labels = {
+    0: 'Clear sky',
+    1: 'Mainly clear',
+    2: 'Partly cloudy',
+    3: 'Overcast',
+    45: 'Fog',
+    48: 'Depositing rime fog',
+    51: 'Light drizzle',
+    53: 'Moderate drizzle',
+    55: 'Dense drizzle',
+    61: 'Slight rain',
+    63: 'Moderate rain',
+    65: 'Heavy rain',
+    71: 'Slight snow',
+    73: 'Moderate snow',
+    75: 'Heavy snow',
+    80: 'Rain showers',
+    81: 'Moderate rain showers',
+    82: 'Violent rain showers',
+    95: 'Thunderstorm',
+  };
+  return labels[code] ?? 'Variable conditions';
+}
+
+function formatTime(value) {
+  if (!value) return 'Unavailable';
+  return new Date(value).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
 function requireEnv(name) {
@@ -355,40 +537,51 @@ function sendError(res, error, fallback) {
   res.status(502).json({ error: message || fallback });
 }
 
-function normalizeGeoNamesCountry(raw) {
-  const population = Number(raw.population ?? 0);
-  const area = Number(raw.areaInSqKm ?? 0);
+function normalizeCountry(geoRaw, restRaw) {
+  const currencies = restRaw?.currencies
+    ? Object.entries(restRaw.currencies).map(([code, value]) => ({
+        code,
+        name: value.name ?? code,
+        symbol: value.symbol ?? '',
+      }))
+    : geoRaw.currencyCode
+      ? [{ code: geoRaw.currencyCode, name: geoRaw.currencyCode, symbol: '' }]
+      : [];
+  const population = Number(restRaw?.population ?? geoRaw.population ?? 0);
+  const area = Number(restRaw?.area ?? geoRaw.areaInSqKm ?? 0);
+  const callingRoot = restRaw?.idd?.root ?? '';
+  const callingSuffix = restRaw?.idd?.suffixes?.length === 1 ? restRaw.idd.suffixes[0] : '';
   return {
-    name: raw.countryName ?? '',
-    official: raw.countryName ?? '',
-    cca2: raw.countryCode ?? '',
-    cca3: raw.isoAlpha3 ?? '',
-    flag: raw.countryCode ? `https://flagcdn.com/w320/${raw.countryCode.toLowerCase()}.png` : '',
-    coat: '',
-    capital: raw.capital ?? '',
-    region: raw.continentName ?? '',
-    subregion: raw.continent ?? '',
+    name: restRaw?.name?.common ?? geoRaw.countryName ?? '',
+    official: restRaw?.name?.official ?? geoRaw.countryName ?? '',
+    cca2: restRaw?.cca2 ?? geoRaw.countryCode ?? '',
+    cca3: restRaw?.cca3 ?? geoRaw.isoAlpha3 ?? '',
+    flag: restRaw?.flags?.png ?? (geoRaw.countryCode ? `https://flagcdn.com/w320/${geoRaw.countryCode.toLowerCase()}.png` : ''),
+    coat: restRaw?.coatOfArms?.png ?? '',
+    capital: restRaw?.capital?.[0] ?? geoRaw.capital ?? '',
+    region: restRaw?.region ?? geoRaw.continentName ?? '',
+    subregion: restRaw?.subregion ?? geoRaw.continent ?? '',
     population,
     area,
-    languages: String(raw.languages ?? '')
-      .split(',')
-      .filter(Boolean),
-    currencies: raw.currencyCode ? [{ code: raw.currencyCode, name: raw.currencyCode, symbol: '' }] : [],
-    timezones: [],
-    tld: raw.topLevelDomain ? [raw.topLevelDomain] : [],
-    callingCode: raw.phone ?? '',
-    drivingSide: '',
-    maps: {},
+    languages: restRaw?.languages ? Object.values(restRaw.languages) : String(geoRaw.languages ?? '').split(',').filter(Boolean),
+    currencies,
+    timezones: restRaw?.timezones ?? [],
+    tld: restRaw?.tld ?? (geoRaw.topLevelDomain ? [geoRaw.topLevelDomain] : []),
+    callingCode: callingRoot ? `${callingRoot}${callingSuffix}` : geoRaw.phone ? `+${String(geoRaw.phone).replace(/^\+/, '')}` : '',
+    drivingSide: restRaw?.car?.side ?? '',
+    maps: restRaw?.maps ?? {},
   };
 }
 
 async function getCountryMetric(code) {
   const country = await getCountryFacts(code);
-  const [gdpUsd, lifeExpectancy, internetUsersPct, co2PerCapita] = await Promise.all([
+  const [gdpUsd, lifeExpectancy, internetUsersPct, co2PerCapita, literacyPct, inflationPct] = await Promise.all([
     worldBankMetric(country.cca3, 'NY.GDP.MKTP.CD'),
     worldBankMetric(country.cca3, 'SP.DYN.LE00.IN'),
     worldBankMetric(country.cca3, 'IT.NET.USER.ZS'),
     worldBankMetric(country.cca3, 'EN.ATM.CO2E.PC'),
+    worldBankMetric(country.cca3, 'SE.ADT.LITR.ZS'),
+    worldBankMetric(country.cca3, 'FP.CPI.TOTL.ZG'),
   ]);
   return {
     code: country.cca2,
@@ -408,6 +601,8 @@ async function getCountryMetric(code) {
     lifeExpectancy,
     internetUsersPct,
     co2PerCapita,
+    literacyPct,
+    inflationPct,
   };
 }
 
@@ -486,3 +681,22 @@ const overpassSelectors = {
   pharmacies: 'amenity="pharmacy"',
   parks: 'leisure="park"',
 };
+
+const eonetCategories = {
+  wildfires: 'wildfires',
+  volcanoes: 'volcanoes',
+  storms: 'severeStorms',
+  floods: 'floods',
+};
+
+function routeInstruction(step, index) {
+  const type = step.maneuver?.type ?? 'continue';
+  const modifier = step.maneuver?.modifier ? ` ${step.maneuver.modifier}` : '';
+  const road = step.name ? ` on ${step.name}` : '';
+  if (type === 'depart') return `Start${road}`;
+  if (type === 'arrive') return 'Arrive at destination';
+  if (type === 'turn') return `Turn${modifier}${road}`;
+  if (type === 'roundabout') return `Enter roundabout${road}`;
+  if (type === 'merge') return `Merge${modifier}${road}`;
+  return `${index === 0 ? 'Continue' : humanize(type)}${modifier}${road}`;
+}

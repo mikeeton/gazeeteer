@@ -14,9 +14,9 @@ export type PlaceSuggestion = {
   population?: number;
 };
 
-export type MapMode = 'street' | 'satellite';
+export type MapMode = 'street' | 'satellite' | 'terrain' | 'dark' | 'light';
 
-export type OverlayKey = 'airports' | 'earthquakes' | 'landmarks';
+export type OverlayKey = 'airports' | 'earthquakes' | 'landmarks' | 'wildfires' | 'volcanoes' | 'storms' | 'floods';
 
 export type DetailMode = 'place' | 'currency' | 'weather' | 'forecast';
 
@@ -49,13 +49,14 @@ export type CurrencyInfo = {
 };
 
 export type WeatherInfo = {
+  source?: string;
   condition: { text: string; icon: string };
   temp_c: number;
   feelslike_c?: number;
   humidity: number;
   wind_kph?: number;
   uv?: number;
-  air_quality?: Record<string, number>;
+  air_quality?: Record<string, number> | null;
   astro: { sunrise: string; sunset: string };
   forecast: {
     forecastday: Array<{
@@ -64,10 +65,19 @@ export type WeatherInfo = {
         maxtemp_c: number;
         mintemp_c: number;
         daily_chance_of_rain: number;
+        uv?: number | null;
         condition: { text: string; icon: string };
       };
     }>;
   };
+  hourly?: Array<{
+    time: string;
+    temp_c: number;
+    humidity: number | null;
+    wind_kph: number | null;
+    rainChance: number | null;
+    uv: number | null;
+  }>;
 };
 
 export type CountryMetric = {
@@ -88,6 +98,8 @@ export type CountryMetric = {
   lifeExpectancy: number | null;
   internetUsersPct: number | null;
   co2PerCapita: number | null;
+  literacyPct: number | null;
+  inflationPct: number | null;
 };
 
 export type NearbyCategory =
@@ -114,7 +126,39 @@ export type NearbyPlace = {
 export type RouteSummary = {
   distanceKm: number;
   durationMinutes: number;
+  profile: 'driving' | 'walking' | 'cycling';
+  flightDistanceKm: number;
+  summary: string;
+  steps: Array<{
+    instruction: string;
+    distanceKm: number;
+    durationMinutes: number;
+    name: string;
+  }>;
   geometry: GeoJSON.LineString;
+};
+
+export type DrawingMode = 'select' | 'marker' | 'circle' | 'rectangle' | 'polygon' | 'distance';
+
+export type DrawingFeature = {
+  id: string;
+  kind: Exclude<DrawingMode, 'select'>;
+  label: string;
+  points: Array<[number, number]>;
+  radiusKm?: number;
+  distanceKm?: number;
+  areaKm2?: number;
+  createdAt: number;
+};
+
+export type DisasterEvent = {
+  id: string;
+  title: string;
+  category: Exclude<OverlayKey, 'airports' | 'earthquakes' | 'landmarks'>;
+  lat: number;
+  lng: number;
+  date: string;
+  source: string;
 };
 
 export type Airport = {

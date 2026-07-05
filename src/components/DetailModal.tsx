@@ -147,9 +147,13 @@ function WeatherDetails() {
     <div className="grid gap-4 sm:grid-cols-2">
       <Metric icon={CloudSun} label="Condition" value={data.condition.text} />
       <Metric label="Temperature" value={`${data.temp_c} C`} />
+      <Metric label="Feels like" value={data.feelslike_c ? `${data.feelslike_c} C` : 'Unavailable'} />
       <Metric label="Humidity" value={`${data.humidity}%`} />
+      <Metric label="Wind" value={data.wind_kph ? `${data.wind_kph} kph` : 'Unavailable'} />
+      <Metric label="UV index" value={data.uv !== undefined && data.uv !== null ? `${data.uv}` : 'Unavailable'} />
       <Metric label="Sunrise" value={data.astro.sunrise} />
       <Metric label="Sunset" value={data.astro.sunset} />
+      <Metric label="Source" value={data.source ?? 'Weather provider'} />
     </div>
   );
 }
@@ -187,11 +191,14 @@ function ForecastDetails() {
         {data.forecast.forecastday.map((day) => (
           <article className="rounded-md border border-slate-200 p-4" key={day.date}>
             <h3 className="font-semibold">{new Date(day.date).toLocaleDateString(undefined, { weekday: 'long' })}</h3>
-            <img alt="" className="my-2 h-12 w-12" src={`https:${day.day.condition.icon}`} />
+            {day.day.condition.icon ? (
+              <img alt="" className="my-2 h-12 w-12" src={`https:${day.day.condition.icon}`} />
+            ) : null}
             <p className="text-sm text-slate-600">{day.day.condition.text}</p>
             <p className="mt-2 text-sm">High {day.day.maxtemp_c} C</p>
             <p className="text-sm">Low {day.day.mintemp_c} C</p>
             <p className="text-sm">Rain {day.day.daily_chance_of_rain}%</p>
+            {day.day.uv !== undefined && day.day.uv !== null ? <p className="text-sm">UV {day.day.uv}</p> : null}
           </article>
         ))}
       </div>

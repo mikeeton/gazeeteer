@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
@@ -30,5 +30,8 @@ export default defineConfig({
   },
   preview: {
     port: 4173,
+  },
+  test: {
+    exclude: ['node_modules/**', 'dist/**', 'src/tests/e2e/**'],
   },
 });
