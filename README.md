@@ -8,6 +8,14 @@ Gazetteer lets users search places, inspect countries, compare national statisti
 
 This repository is ready for local review and portfolio presentation. The app has been restyled, the README screenshots are current, environment files are ignored, and the quality checks pass locally.
 
+Current local development URLs:
+
+```text
+Frontend: http://localhost:5173
+API:      http://localhost:3001
+Health:   http://localhost:3001/api/health
+```
+
 Live demo: pending deployment after API key rotation.
 
 ## Preview
@@ -105,17 +113,21 @@ Run the frontend and backend together:
 npm run dev:full
 ```
 
-Open the app:
+Open the frontend:
 
 ```text
 http://localhost:5173
 ```
 
-The API runs on:
+Check the backend:
 
 ```text
-http://localhost:3001
+http://localhost:3001/api/health
 ```
+
+Stop the local servers with `Ctrl+C` in the terminal running `npm run dev:full`.
+
+For local network testing, Vite also prints a `Network` URL when the dev server starts. Use that URL from another device on the same Wi-Fi.
 
 ## Scripts
 
