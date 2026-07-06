@@ -591,19 +591,19 @@ function MiniRow({ label, value }: { label: string; value: string }) {
 export function EmptyState() {
   const steps = ['Search a country or city', 'Open map layers', 'Compare, route, draw, export'];
   return (
-    <div className="ui-card-muted grid gap-4 px-5 py-6 text-slate-500">
-      <div className="text-center">
-        <SearchX className="mx-auto mb-2 size-8 text-teal" />
-        <p className="text-sm font-semibold text-ink">Start exploring</p>
-        <p className="mt-1 text-sm">Search for a place to unlock insights and tools.</p>
+    <div className="explorer-empty">
+      <div className="explorer-empty-header">
+        <span className="explorer-empty-icon">
+          <SearchX className="size-5" />
+        </span>
+        <p className="explorer-empty-title">Start exploring</p>
+        <p className="explorer-empty-copy">Search for a place to unlock insights and tools.</p>
       </div>
-      <ol className="grid gap-2 text-sm">
+      <ol className="explorer-empty-steps">
         {steps.map((step, index) => (
-          <li className="flex items-center gap-3 rounded-md bg-white/70 px-3 py-2" key={step}>
-            <span className="grid size-6 shrink-0 place-items-center rounded-md bg-teal text-xs font-bold text-white">
-              {index + 1}
-            </span>
-            <span>{step}</span>
+          <li className="explorer-empty-step" key={step}>
+            <span className="explorer-empty-number">{index + 1}</span>
+            <span className="explorer-empty-label">{step}</span>
           </li>
         ))}
       </ol>
