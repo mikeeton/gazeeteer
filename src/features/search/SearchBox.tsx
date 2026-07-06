@@ -46,7 +46,7 @@ export function SearchBox() {
           aria-autocomplete="list"
           aria-controls={listId}
           aria-expanded={isOpen}
-          className="h-12 w-full rounded-md border border-white/70 bg-white pl-12 pr-12 text-sm font-semibold text-ink shadow-panel outline-none transition placeholder:text-slate-400 focus:border-teal focus:ring-4 focus:ring-teal/20"
+          className="search-input h-12 w-full rounded-md border border-white/70 bg-white pl-12 pr-12 text-sm font-semibold text-ink shadow-panel outline-none transition placeholder:text-slate-400 focus:border-teal focus:ring-4 focus:ring-teal/20"
           onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -73,7 +73,7 @@ export function SearchBox() {
         {query ? (
           <button
             aria-label="Clear search"
-            className="absolute right-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-ink"
+            className="search-clear absolute right-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-ink"
             onClick={() => {
               setQuery('');
               setIsOpen(false);
@@ -99,7 +99,7 @@ export function SearchBox() {
             {data.map((place, index) => (
               <li key={`${place.geonameId}-${place.name}`} role="option">
                 <button
-                  className={`flex w-full items-center justify-between gap-4 rounded-md px-4 py-3 text-left transition hover:bg-white/10 focus:bg-white/10 focus:outline-none ${
+                  className={`search-result-button flex w-full items-center justify-between gap-4 rounded-md px-4 py-3 text-left transition hover:bg-white/10 focus:bg-white/10 focus:outline-none ${
                     activeIndex === index ? 'bg-white/10 ring-1 ring-white/10' : ''
                   }`}
                   onMouseDown={(event) => event.preventDefault()}
@@ -107,17 +107,17 @@ export function SearchBox() {
                   onMouseEnter={() => setActiveIndex(index)}
                   type="button"
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-white">{place.name}</span>
-                    <span className="mt-0.5 block truncate text-xs text-slate-300">
+                  <span className="search-result-main min-w-0">
+                    <span className="search-result-title block truncate text-sm font-semibold text-white">{place.name}</span>
+                    <span className="search-result-meta mt-0.5 block truncate text-xs text-slate-300">
                       {placeLocationLabel(place)}
                     </span>
-                    <span className="mt-1 block text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                    <span className="search-result-detail mt-1 block text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-slate-400">
                       {coordinateLabel(place)}
                       {place.population ? ` · ${formatCompact(place.population)} people` : ''}
                     </span>
                   </span>
-                  <span className="shrink-0 rounded-md bg-gold/10 px-2 py-1 text-xs font-bold text-gold">
+                  <span className="search-result-badge shrink-0 rounded-md bg-gold/10 px-2 py-1 text-xs font-bold text-gold">
                     {featureLabel(place)}
                   </span>
                 </button>

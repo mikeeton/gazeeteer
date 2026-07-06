@@ -115,7 +115,7 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
       type="button"
     >
       <Icon className="size-4" aria-hidden="true" />
-      {label}
+      <span>{label}</span>
     </button>
   );
 
@@ -140,7 +140,7 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
         id="map-controls"
         ref={panelRef}
       >
-        <div className="border-b border-white/10 bg-white/5 px-4 py-3">
+        <div className="control-panel-header border-b border-white/10 bg-white/5 px-4 py-3">
           <p className="ui-section-title text-teal">Map menu</p>
           <h2 className="mt-0.5 text-base font-semibold">Explore controls</h2>
           <p className="mt-1 text-xs text-slate-300">
@@ -150,21 +150,21 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
 
         <div className="control-panel-scroll grid max-h-[min(70vh,43rem)] gap-4 overflow-y-auto p-4">
           <MenuSection title="Map style">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="control-button-grid grid grid-cols-2 gap-2">
               {mapModes.map(({ key, label, icon: Icon }) => (
                 <button className={buttonClass(mapMode === key)} key={key} onClick={() => setMapMode(key)} type="button">
                   <Icon className="size-4" aria-hidden="true" />
-                  {label}
+                  <span>{label}</span>
                 </button>
               ))}
             </div>
           </MenuSection>
 
           <MenuSection title="Quick actions">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="control-button-grid grid grid-cols-2 gap-2">
               <button className={buttonClass(darkMode)} onClick={() => setDarkMode(!darkMode)} type="button">
                 {darkMode ? <Moon className="size-4" aria-hidden="true" /> : <Sun className="size-4" aria-hidden="true" />}
-                Theme
+                <span>Theme</span>
               </button>
               <button
                 className={buttonClass(selectedIsFavorite)}
@@ -173,21 +173,21 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
                 type="button"
               >
                 <Star className="size-4" aria-hidden="true" />
-                Save
+                <span>Save</span>
               </button>
               <button className={buttonClass(false)} onClick={resetMap} type="button">
                 <Home className="size-4" aria-hidden="true" />
-                Home
+                <span>Home</span>
               </button>
               <button className={buttonClass(false)} onClick={openWikipedia} type="button">
                 <BookOpenText className="size-4" aria-hidden="true" />
-                Wiki
+                <span>Wiki</span>
               </button>
             </div>
           </MenuSection>
 
           <MenuSection title="Overlays">
-            <div className="grid gap-2">
+            <div className="control-stack-grid grid gap-2">
               {overlayButton('airports', 'Airports', Plane)}
               {overlayButton('earthquakes', 'Earthquakes', Waves)}
               {overlayButton('landmarks', 'Landmarks', Landmark)}
@@ -199,28 +199,28 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
           </MenuSection>
 
           <MenuSection title="Details">
-            <div className="grid gap-2">
+            <div className="control-stack-grid grid gap-2">
               <button className={buttonClass(false)} onClick={() => openDetail('place')} type="button">
                 <Info className="size-4" aria-hidden="true" />
-                Place info
+                <span>Place info</span>
               </button>
               <button className={buttonClass(false)} onClick={() => openDetail('currency')} type="button">
                 <Banknote className="size-4" aria-hidden="true" />
-                Currency
+                <span>Currency</span>
               </button>
               <button className={buttonClass(false)} onClick={() => openDetail('weather')} type="button">
                 <CloudSun className="size-4" aria-hidden="true" />
-                Weather
+                <span>Weather</span>
               </button>
               <button className={buttonClass(false)} onClick={() => openDetail('forecast')} type="button">
                 <CalendarDays className="size-4" aria-hidden="true" />
-                Forecast
+                <span>Forecast</span>
               </button>
             </div>
           </MenuSection>
 
           {selectedPlace ? (
-            <p className="flex items-start gap-2 rounded-md border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
+            <p className="control-status flex items-start gap-2 rounded-md border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
               <Globe2 className="mt-0.5 size-4 shrink-0 text-teal" aria-hidden="true" />
               <span>
                 Active place: <strong className="text-white">{selectedPlace.name}</strong>
@@ -248,7 +248,7 @@ function buttonClass(active: boolean) {
 function MenuSection({ children, title }: { children: ReactNode; title: string }) {
   return (
     <details className="menu-section grid gap-2" open>
-      <summary className="ui-section-title flex cursor-pointer list-none items-center justify-between rounded-md py-1">
+      <summary className="menu-summary ui-section-title flex cursor-pointer list-none items-center justify-between rounded-md py-1">
         {title}
         <span className="text-slate-500">+</span>
       </summary>

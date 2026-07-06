@@ -21,6 +21,7 @@ import {
   getRoute,
   getWeather,
 } from '../../api/gazetteerApi';
+import { featureClasses, featureTypes } from '../../constants/featureTypes';
 import { useAppStore } from '../../store/appStore';
 import type { DrawingMode, NearbyCategory, PlaceSuggestion } from '../../types/app';
 import {
@@ -68,12 +69,37 @@ export function InsightsTab({ place }: { place: PlaceSuggestion }) {
     { name: 'Area', value: metrics.data.area },
     { name: 'GDP', value: metrics.data.gdpUsd ?? 0 },
   ];
+  const isCountry = place.fcode === 'PCLI';
 
   return (
     <div className="grid gap-4">
+      <article className="place-context-card">
+        <div className="min-w-0">
+          <p className="ui-section-title">Selected place</p>
+          <h3>{place.name}</h3>
+          <p>
+            {[place.adminName2, place.adminName1, place.countryName].filter(Boolean).join(', ') ||
+              place.countryCode ||
+              'Mapped location'}
+          </p>
+        </div>
+        <dl>
+          <MiniRow label="Type" value={featureLabel(place)} />
+          <MiniRow label="Coordinates" value={`${place.lat.toFixed(4)}, ${place.lng.toFixed(4)}`} />
+          {!isCountry ? (
+            <MiniRow label="Local population" value={place.population ? formatCompact(place.population) : 'No local data'} />
+          ) : null}
+        </dl>
+      </article>
+      <div className="panel-section-heading">
+        <p className="ui-section-title">{isCountry ? 'Country statistics' : `Country context: ${metrics.data.name}`}</p>
+        {!isCountry ? (
+          <p>These figures describe {metrics.data.name}, not the exact selected place.</p>
+        ) : null}
+      </div>
       <div className="grid grid-cols-2 gap-3">
-        <Stat label="Population" value={formatCompact(metrics.data.population)} />
-        <Stat label="Density" value={`${metrics.data.density}/km2`} />
+        <Stat label={isCountry ? 'Population' : 'Country pop.'} value={formatCompact(metrics.data.population)} />
+        <Stat label="Country density" value={`${metrics.data.density}/km2`} />
         <Stat label="Capital" value={metrics.data.capital || 'Unknown'} />
         <Stat
           label="Life exp."
@@ -94,11 +120,11 @@ export function InsightsTab({ place }: { place: PlaceSuggestion }) {
       <div className="ui-card-muted p-3 text-sm text-slate-700">
         <p className="font-semibold text-ink">Travel snapshot</p>
         <p className="mt-1">
-          {place.name} uses {metrics.data.currency || 'local currency'} and drives on the{' '}
+          {metrics.data.name} uses {metrics.data.currency || 'local currency'} and drives on the{' '}
           {metrics.data.drivingSide || 'unknown'} side. Internet usage is{' '}
           {metrics.data.internetUsersPct ? `${metrics.data.internetUsersPct}%` : 'not available'}.
           {weather.data
-            ? ` Current weather is ${weather.data.condition.text.toLowerCase()}, ${weather.data.temp_c} C.`
+            ? ` Weather at ${place.name} is ${weather.data.condition.text.toLowerCase()}, ${weather.data.temp_c} C.`
             : ''}
         </p>
       </div>
@@ -221,20 +247,27 @@ export function NearbyTab({ place }: { place: PlaceSuggestion }) {
 
   return (
     <div className="grid gap-3">
-      <div className="grid grid-cols-[1fr_auto] gap-2">
-        <select
-          className="ui-select"
-          onChange={(event) => setCategory(event.target.value as NearbyCategory)}
-          value={category}
-        >
+      <div className="panel-section-heading">
+        <p className="ui-section-title">Nearby search</p>
+        <p>Find mapped places around {place.name}.</p>
+      </div>
+      <div className="choice-grid choice-grid-compact" role="listbox" aria-label="Nearby category">
           {nearbyCategories.map((item) => (
-            <option key={item.key} value={item.key}>
+            <button
+              aria-selected={category === item.key}
+              className={`choice-button ${category === item.key ? 'choice-button-active' : ''}`}
+              key={item.key}
+              onClick={() => setCategory(item.key)}
+              role="option"
+              type="button"
+            >
               {item.label}
-            </option>
+            </button>
           ))}
-        </select>
-        <button className="ui-button ui-button-primary" onClick={loadNearby} type="button">
-          Find
+      </div>
+      <div className="grid">
+        <button aria-label="Find" className="ui-button ui-button-primary" onClick={loadNearby} type="button">
+          Find {nearbyCategories.find((item) => item.key === category)?.label.toLowerCase()}
         </button>
       </div>
       {query.isFetching ? <SkeletonRows /> : null}
@@ -279,22 +312,36 @@ export function RouteTab({ place }: { place: PlaceSuggestion }) {
 
   return (
     <div className="grid gap-3">
-      <select
-        className="ui-select"
-        onChange={(event) => setDestinationId(event.target.value)}
-        value={destinationId}
-      >
-        <option value="">Choose destination from history</option>
+      <div className="panel-section-heading">
+        <p className="ui-section-title">Destination</p>
+        <p>Choose a recent place to route from {place.name}.</p>
+      </div>
+      {destinations.length ? (
+        <div className="route-destination-list" role="listbox" aria-label="Route destination">
         {destinations.map((item) => (
-          <option key={item.geonameId} value={String(item.geonameId)}>
-            {item.name}, {item.countryName}
-          </option>
+          <button
+            aria-selected={String(item.geonameId) === destinationId}
+            className={`route-destination ${String(item.geonameId) === destinationId ? 'route-destination-active' : ''}`}
+            key={item.geonameId}
+            onClick={() => setDestinationId(String(item.geonameId))}
+            role="option"
+            type="button"
+          >
+            <span>
+              <strong>{item.name}</strong>
+              <small>{[item.adminName1, item.countryName].filter(Boolean).join(', ')}</small>
+            </span>
+            <em>{distanceKm(place.lat, place.lng, item.lat, item.lng).toFixed(0)} km</em>
+          </button>
         ))}
-      </select>
-      <div className="grid grid-cols-3 gap-2">
+        </div>
+      ) : (
+        <p className="empty-inline">Search or click another place first, then return here to route.</p>
+      )}
+      <div className="route-profile-grid">
         {(['driving', 'walking', 'cycling'] as const).map((item) => (
           <button
-            className={`ui-button ${profile === item ? 'ui-button-active' : 'ui-button-soft'}`}
+            className={`choice-button ${profile === item ? 'choice-button-active' : ''}`}
             key={item}
             onClick={() => setProfile(item)}
             type="button"
@@ -329,7 +376,7 @@ export function RouteTab({ place }: { place: PlaceSuggestion }) {
             <ol className="mt-2 grid gap-2 text-sm">
               {query.data.steps.slice(0, 8).map((step, index) => (
                 <li
-                  className="grid grid-cols-[1.5rem_1fr_auto] gap-2"
+                  className="route-step"
                   key={`${step.instruction}-${index}`}
                 >
                   <span className="text-slate-400">{index + 1}</span>
@@ -343,6 +390,10 @@ export function RouteTab({ place }: { place: PlaceSuggestion }) {
       ) : null}
     </div>
   );
+}
+
+function featureLabel(place: PlaceSuggestion) {
+  return featureTypes[place.fcode] ?? place.fclName ?? featureClasses[place.fcl ?? ''] ?? place.fcode;
 }
 
 export function DrawTab() {

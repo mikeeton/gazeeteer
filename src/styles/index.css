@@ -55,6 +55,10 @@ select {
   -webkit-tap-highlight-color: transparent;
 }
 
+button {
+  min-width: 0;
+}
+
 @layer components {
   .glass-panel {
     border: 1px solid var(--border-soft);
@@ -92,12 +96,24 @@ select {
     font-size: 0.875rem;
     font-weight: 750;
     line-height: 1.1;
+    text-align: center;
     transition:
       transform var(--speed),
       background var(--speed),
       border-color var(--speed),
       color var(--speed),
       box-shadow var(--speed);
+  }
+
+  .ui-button > svg {
+    flex: 0 0 auto;
+  }
+
+  .ui-button > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .ui-button:hover:not(:disabled) {
@@ -210,6 +226,52 @@ select {
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
 }
 
+.leaflet-control-zoom {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.leaflet-control-zoom a,
+.map-recenter-button {
+  width: 2.65rem !important;
+  height: 2.65rem !important;
+  line-height: 2.65rem !important;
+}
+
+.map-recenter-control {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.map-recenter-button {
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--color-ink);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
+  font-size: 0.76rem;
+  font-weight: 850;
+  line-height: 1 !important;
+  transition:
+    transform var(--speed),
+    background var(--speed),
+    color var(--speed),
+    opacity var(--speed);
+}
+
+.map-recenter-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--color-teal);
+  color: #fff;
+}
+
+.map-recenter-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
   border-radius: var(--radius);
@@ -279,13 +341,214 @@ select {
   z-index: 1300 !important;
 }
 
+.search-input {
+  min-height: 3rem;
+}
+
 .search-results {
   border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(21, 24, 25, 0.985);
   box-shadow: 0 22px 70px rgba(15, 23, 42, 0.34);
+}
+
+.search-result-button {
+  min-height: 4.7rem;
+}
+
+.search-result-title,
+.search-result-meta,
+.search-result-detail {
+  overflow-wrap: anywhere;
+}
+
+.search-result-badge {
+  max-width: 9.5rem;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .explorer-panel {
   box-shadow: var(--shadow-panel);
+}
+
+.panel-section-heading {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.panel-section-heading p:last-child {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.place-context-card {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid rgba(15, 139, 141, 0.22);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, rgba(15, 139, 141, 0.16), rgba(255, 255, 255, 0.07)),
+    rgba(15, 23, 42, 0.18);
+  padding: 1rem;
+}
+
+.place-context-card h3 {
+  margin: 0.1rem 0 0;
+  color: #f8fafc;
+  font-size: 1.05rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.place-context-card p {
+  margin: 0.2rem 0 0;
+  color: #cbd5e1;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.place-context-card dl {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+.place-context-card dt,
+.place-context-card dd {
+  min-width: 0;
+}
+
+.place-context-card dd {
+  overflow-wrap: anywhere;
+}
+
+.choice-grid,
+.route-profile-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.choice-grid-compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.route-profile-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.choice-button,
+.route-destination {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  transition:
+    transform var(--speed),
+    border-color var(--speed),
+    background var(--speed),
+    color var(--speed),
+    box-shadow var(--speed);
+}
+
+.choice-button {
+  min-height: 2.6rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.choice-button:hover,
+.route-destination:hover {
+  transform: translateY(-1px);
+  border-color: rgba(20, 184, 166, 0.5);
+  background: rgba(20, 184, 166, 0.14);
+}
+
+.choice-button-active,
+.route-destination-active {
+  border-color: rgba(20, 184, 166, 0.75);
+  background: var(--color-teal);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(15, 139, 141, 0.24);
+}
+
+.route-destination-list {
+  display: grid;
+  max-height: 12rem;
+  gap: 0.55rem;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 139, 141, 0.86) rgba(15, 23, 42, 0.08);
+}
+
+.route-destination {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.72rem 0.8rem;
+  text-align: left;
+}
+
+.route-destination span {
+  display: grid;
+  min-width: 0;
+  gap: 0.18rem;
+}
+
+.route-destination strong,
+.route-destination small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-destination strong {
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.route-destination small,
+.route-destination em {
+  color: #cbd5e1;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.route-destination-active small,
+.route-destination-active em {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.empty-inline {
+  margin: 0;
+  border: 1px dashed rgba(148, 163, 184, 0.28);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  color: #cbd5e1;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.route-step {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.route-step span:nth-child(2) {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .explorer-empty {
@@ -375,6 +638,51 @@ select {
 .control-toggle,
 .control-panel {
   z-index: 1200 !important;
+}
+
+.control-panel {
+  transform-origin: top right;
+}
+
+.control-panel-header h2,
+.control-panel-header p {
+  overflow-wrap: anywhere;
+}
+
+.control-button-grid,
+.control-stack-grid {
+  min-width: 0;
+}
+
+.control-button-grid .ui-button,
+.control-stack-grid .ui-button {
+  width: 100%;
+}
+
+.control-stack-grid .ui-button {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.menu-summary {
+  gap: 0.75rem;
+  min-height: 1.75rem;
+}
+
+.control-status {
+  overflow-wrap: anywhere;
+}
+
+.detail-dialog {
+  max-width: calc(100vw - 2rem);
+}
+
+.detail-header {
+  min-width: 0;
+}
+
+.detail-body {
+  overscroll-behavior: contain;
 }
 
 .control-panel-open {
@@ -474,13 +782,33 @@ select {
   background-color: rgba(255, 255, 255, 0.08);
 }
 
+.app-dark .dark-panel .place-context-card .text-slate-500,
+.app-dark .dark-panel .place-context-card .text-slate-600 {
+  color: #cbd5e1;
+}
+
+@media (min-width: 721px) and (max-width: 1120px) {
+  .search-shell {
+    top: 1rem;
+    width: min(72vw, 34rem);
+  }
+
+  .control-panel {
+    width: min(24rem, calc(100vw - 2rem));
+  }
+
+  .explorer-panel {
+    width: min(27rem, calc(100vw - 2rem));
+  }
+}
+
 @media (max-width: 720px) {
   .explorer-panel {
     right: 0;
     bottom: 0;
     left: 0;
     width: auto;
-    max-height: 58vh;
+    max-height: min(58dvh, 32rem);
     border-right: 0;
     border-bottom: 0;
     border-left: 0;
@@ -489,12 +817,71 @@ select {
   }
 
   main:has(.control-panel-open) .explorer-panel {
-    transform: translateY(calc(100% - 3.6rem));
+    transform: translateY(100%);
   }
 
   .search-shell {
     top: 0.75rem;
     width: min(94vw, 28rem);
+  }
+
+  .leaflet-top.leaflet-left {
+    top: 3.85rem;
+  }
+
+  .leaflet-control-zoom a,
+  .map-recenter-button {
+    width: 2.85rem !important;
+    height: 2.85rem !important;
+    line-height: 2.85rem !important;
+  }
+
+  .leaflet-bottom.leaflet-right {
+    bottom: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .map-recenter-control {
+    margin-bottom: calc(min(58dvh, 32rem) + 0.75rem) !important;
+  }
+
+  .search-results {
+    max-height: min(36dvh, 19rem);
+    border-radius: 0.5rem;
+  }
+
+  .search-result-button {
+    min-height: 5rem;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.8rem 0.85rem;
+  }
+
+  .search-result-main {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  .search-result-title {
+    font-size: 0.95rem;
+  }
+
+  .search-result-meta {
+    white-space: normal;
+  }
+
+  .search-result-detail {
+    letter-spacing: 0.06em;
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  .search-result-badge {
+    max-width: 7.5rem;
+    padding-inline: 0.5rem;
+    font-size: 0.68rem;
+    line-height: 1.2;
+    white-space: normal;
   }
 
   .explorer-panel nav button {
@@ -518,22 +905,197 @@ select {
   }
 
   .control-panel {
-    top: 7.75rem;
+    top: 7.65rem;
     right: 0.75rem;
     width: min(22rem, calc(100vw - 1.5rem));
     max-height: calc(100dvh - 8.5rem);
     background: rgba(15, 23, 42, 0.97);
   }
 
+  .control-panel-header {
+    padding: 0.85rem 1rem;
+  }
+
   .control-panel-scroll {
     max-height: calc(100dvh - 15.5rem);
+    gap: 0.85rem;
+    padding: 0.9rem;
+  }
+
+  .control-button-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .control-stack-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .control-stack-grid .ui-button {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .control-panel .ui-button {
+    min-height: 2.85rem;
+    padding: 0.55rem 0.6rem;
+    font-size: 0.78rem;
+  }
+
+  .detail-backdrop {
+    align-items: end;
+    padding: 0.75rem;
+  }
+
+  .detail-dialog {
+    width: 100%;
+    max-height: min(88dvh, 46rem);
+    border-radius: 14px 14px 8px 8px;
+  }
+
+  .detail-header {
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .detail-header h2 {
+    font-size: 1rem;
+  }
+
+  .detail-header img {
+    width: 2.35rem;
+    height: 1.55rem;
+  }
+
+  .detail-body {
+    max-height: calc(88dvh - 5rem);
+    padding: 1rem;
+  }
+
+  .choice-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .choice-button {
+    min-height: 2.75rem;
+    padding-inline: 0.55rem;
+    font-size: 0.78rem;
+  }
+
+  .route-destination-list {
+    max-height: 10rem;
   }
 }
 
 @media (max-width: 420px) {
+  .search-shell {
+    width: calc(100vw - 1.25rem);
+  }
+
+  .search-input {
+    padding-right: 2.75rem;
+    padding-left: 2.7rem;
+  }
+
+  .search-clear {
+    right: 0.65rem;
+  }
+
+  .search-result-button {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .search-result-badge {
+    max-width: 6.3rem;
+  }
+
+  .search-results {
+    max-height: min(34dvh, 16.5rem);
+  }
+
   .explorer-tabs {
     overflow-x: auto;
     grid-template-columns: repeat(7, minmax(4.5rem, 1fr));
+  }
+
+  .control-panel {
+    right: 0.625rem;
+    width: calc(100vw - 1.25rem);
+  }
+
+  .control-panel .ui-button {
+    gap: 0.4rem;
+    min-height: 2.7rem;
+    padding-inline: 0.45rem;
+  }
+
+  .detail-backdrop {
+    padding-inline: 0.5rem;
+  }
+
+  .detail-dialog {
+    max-width: calc(100vw - 1rem);
+  }
+
+  .route-profile-grid,
+  .choice-grid-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .route-destination {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 340px) {
+  .search-results {
+    max-height: min(32dvh, 14.5rem);
+  }
+
+  .search-result-button {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .search-result-badge {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .control-stack-grid,
+  .control-button-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 620px) and (orientation: landscape) {
+  .search-shell {
+    top: 0.5rem;
+    width: min(56vw, 32rem);
+  }
+
+  .leaflet-top.leaflet-left {
+    top: 0.25rem;
+  }
+
+  .search-results {
+    max-height: calc(100dvh - 4.5rem);
+  }
+
+  .control-toggle {
+    top: 0.5rem;
+  }
+
+  .control-panel {
+    top: 4rem;
+    max-height: calc(100dvh - 4.5rem);
+  }
+
+  .control-panel-scroll {
+    max-height: calc(100dvh - 10.25rem);
+  }
+
+  .explorer-panel {
+    max-height: calc(100dvh - 1rem);
   }
 }
 

@@ -65,12 +65,43 @@ app.get('/api/places', async (req, res) => {
         if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng) || seen.has(key)) return false;
         seen.add(key);
         return true;
-      })
+      });
     const geonames = rankPlaceSearchResults(q, candidates).slice(0, 40);
 
     res.json({ geonames });
   } catch (error) {
     sendError(res, error, 'Place search failed');
+  }
+});
+
+app.get('/api/reverse-place', async (req, res) => {
+  try {
+    const lat = clamp(Number(req.query.lat), -90, 90);
+    const lng = clamp(Number(req.query.lng), -180, 180);
+    const data = await cached(`reverse:${lat.toFixed(5)}:${lng.toFixed(5)}`, 1000 * 60 * 60, () =>
+      fetchJson(
+        `https://nominatim.openstreetmap.org/reverse?${new URLSearchParams({
+          lat: String(lat),
+          lon: String(lng),
+          format: 'jsonv2',
+          addressdetails: '1',
+          extratags: '1',
+          namedetails: '1',
+          zoom: '18',
+        }).toString()}`,
+        {
+          headers: {
+            accept: 'application/json',
+            'user-agent': 'Gazetteer/1.0 reverse-place lookup',
+          },
+        },
+      ),
+    );
+    const place = normalizeReversePlace(data, lat, lng);
+    if (!place) return res.status(404).json({ error: 'No mapped place found here' });
+    res.json({ place });
+  } catch (error) {
+    sendError(res, error, 'Map click lookup failed');
   }
 });
 
@@ -661,6 +692,77 @@ export function normalizePlace(place) {
     population: Number(place.population ?? 0),
     alternateNames: normalizeAlternateNames(place.alternateNames),
   };
+}
+
+function normalizeReversePlace(raw, fallbackLat, fallbackLng) {
+  if (!raw || raw.error) return null;
+  const address = raw.address ?? {};
+  const displayName = String(raw.display_name ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+  const countryCode = String(address.country_code ?? '').toUpperCase();
+  const name = firstText(
+    raw.name,
+    raw.namedetails?.name,
+    address.attraction,
+    address.tourism,
+    address.amenity,
+    address.building,
+    address.road,
+    address.neighbourhood,
+    address.suburb,
+    address.city,
+    address.town,
+    address.village,
+    address.county,
+    address.state,
+    displayName[0],
+    'Mapped place',
+  );
+  const feature = reverseFeature(raw);
+
+  return {
+    name,
+    lat: Number(raw.lat ?? fallbackLat),
+    lng: Number(raw.lon ?? fallbackLng),
+    countryName: address.country ?? '',
+    countryCode,
+    adminName1: address.state ?? address.region ?? '',
+    adminName2: address.county ?? address.city_district ?? '',
+    fcode: feature.fcode,
+    fcl: feature.fcl,
+    fclName: feature.label,
+    geonameId: raw.place_id ? Number(raw.place_id) : null,
+    wikipediaUrl: normalizeWikipediaUrl(raw.extratags?.wikipedia ?? ''),
+    population: 0,
+  };
+}
+
+function firstText(...values) {
+  return values.map((value) => String(value ?? '').trim()).find(Boolean) ?? '';
+}
+
+function reverseFeature(raw) {
+  const category = String(raw.category ?? '');
+  const type = String(raw.type ?? '');
+  const osmClass = `${category}:${type}`;
+  if (category === 'boundary' && type === 'administrative') return { fcode: 'ADM', fcl: 'A', label: 'Administrative area' };
+  if (category === 'place' && ['city', 'town', 'village', 'hamlet', 'suburb', 'neighbourhood'].includes(type)) {
+    return { fcode: type === 'city' ? 'PPLA' : 'PPL', fcl: 'P', label: humanize(type) };
+  }
+  if (category === 'aeroway') return { fcode: 'AIRP', fcl: 'S', label: 'Airport' };
+  if (category === 'tourism') return { fcode: 'TOUR', fcl: 'S', label: humanize(type || 'landmark') };
+  if (category === 'amenity') return { fcode: 'AMEN', fcl: 'S', label: humanize(type || 'amenity') };
+  if (category === 'leisure') return { fcode: 'PRK', fcl: 'L', label: humanize(type || 'leisure') };
+  if (category === 'natural') return { fcode: type === 'peak' ? 'PK' : 'NAT', fcl: 'T', label: humanize(type || 'natural feature') };
+  if (category === 'waterway') return { fcode: 'STM', fcl: 'H', label: humanize(type || 'waterway') };
+  if (category === 'highway') return { fcode: 'RD', fcl: 'R', label: humanize(type || 'road') };
+  if (category === 'building') return { fcode: 'BLDG', fcl: 'S', label: humanize(type || 'building') };
+  return { fcode: type ? type.toUpperCase().slice(0, 8) : 'PLACE', fcl: 'S', label: humanize(osmClass || 'mapped place') };
+}
+
+function normalizeWikipediaUrl(value) {
+  if (!value) return '';
+  const title = String(value).includes(':') ? String(value).split(':').slice(1).join(':') : String(value);
+  return `en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
 }
 
 function featureRank(fcode, fcl) {

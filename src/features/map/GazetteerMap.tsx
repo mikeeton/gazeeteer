@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import L from 'leaflet';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   Circle,
   CircleMarker,
@@ -17,7 +17,7 @@ import {
 } from 'react-leaflet';
 import toast from 'react-hot-toast';
 
-import { getAirports, getDisasters, getEarthquakes, getLandmarks } from '../../api/gazetteerApi';
+import { getAirports, getDisasters, getEarthquakes, getLandmarks, reversePlace } from '../../api/gazetteerApi';
 import { useAppStore } from '../../store/appStore';
 import type { Airport, DisasterEvent, DrawingFeature, EarthquakeFeature, PlaceSuggestion } from '../../types/app';
 import { drawingSummary } from '../../utils/explorerUtils';
@@ -115,11 +115,11 @@ export function GazetteerMap() {
         url={tileLayer.url}
       />
       <MapFocus place={selectedPlace} />
+      <RecenterControl place={selectedPlace} />
+      <MapClickIdentify />
       <DrawingEvents />
       {selectedPlace ? (
-        <Marker icon={selectedIcon} position={[selectedPlace.lat, selectedPlace.lng]}>
-          <Tooltip direction="top">{selectedPlace.name}</Tooltip>
-        </Marker>
+        <SelectedPlaceMarker place={selectedPlace} />
       ) : null}
       {overlays.airports
         ? visibleAirports.map((airport) => (
@@ -252,6 +252,88 @@ function useDisasterLayer(category: DisasterEvent['category'], enabled: boolean)
     enabled,
     staleTime: 1000 * 60 * 20,
   });
+}
+
+function SelectedPlaceMarker({ place }: { place: PlaceSuggestion }) {
+  const markerRef = useRef<L.Marker | null>(null);
+
+  useEffect(() => {
+    markerRef.current?.openPopup();
+  }, [place.geonameId, place.lat, place.lng]);
+
+  return (
+    <Marker icon={selectedIcon} position={[place.lat, place.lng]} ref={markerRef}>
+      <Tooltip direction="top">{place.name}</Tooltip>
+      <Popup>
+        <strong>{place.name}</strong>
+        <p>
+          {[place.adminName2, place.adminName1, place.countryName].filter(Boolean).join(', ') ||
+            'Mapped place'}
+        </p>
+        <p>
+          {place.fclName ?? place.fcode} · {place.lat.toFixed(5)}, {place.lng.toFixed(5)}
+        </p>
+        {place.wikipediaUrl ? (
+          <a href={`https://${place.wikipediaUrl}`} rel="noreferrer" target="_blank">
+            View details
+          </a>
+        ) : null}
+      </Popup>
+    </Marker>
+  );
+}
+
+function MapClickIdentify() {
+  const drawingMode = useAppStore((state) => state.drawingMode);
+  const setSelectedPlace = useAppStore((state) => state.setSelectedPlace);
+  const mutation = useMutation({
+    mutationFn: ({ lat, lng }: { lat: number; lng: number }) => reversePlace(lat, lng),
+    onMutate: () => toast.loading('Looking up this place...', { id: 'map-click-lookup' }),
+    onSuccess: (place) => {
+      toast.dismiss('map-click-lookup');
+      setSelectedPlace(place);
+    },
+    onError: () => toast.error('No mapped place found at that point.', { id: 'map-click-lookup' }),
+  });
+
+  useMapEvents({
+    click(event) {
+      if (drawingMode !== 'select') return;
+      mutation.mutate({ lat: event.latlng.lat, lng: event.latlng.lng });
+    },
+  });
+
+  return null;
+}
+
+function RecenterControl({ place }: { place: PlaceSuggestion | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const control = new L.Control({ position: 'bottomright' });
+    control.onAdd = () => {
+      const container = L.DomUtil.create('div', 'leaflet-bar map-recenter-control');
+      const button = L.DomUtil.create('button', 'map-recenter-button', container);
+      button.type = 'button';
+      button.textContent = 'Center';
+      button.title = place ? `Center map on ${place.name}` : 'Select a place to center the map';
+      button.disabled = !place;
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.on(button, 'click', () => {
+        if (!place) return;
+        map.setView([place.lat, place.lng], Math.max(map.getZoom(), selectedZoom(place)), {
+          animate: true,
+        });
+      });
+      return container;
+    };
+    control.addTo(map);
+    return () => {
+      control.remove();
+    };
+  }, [map, place]);
+
+  return null;
 }
 
 function DrawingEvents() {
@@ -387,13 +469,20 @@ function MapFocus({ place }: { place: PlaceSuggestion | null }) {
 
   useEffect(() => {
     if (place) {
-      map.setView([place.lat, place.lng], place.fcode === 'PCLI' ? 5 : 7, { animate: true });
+      map.setView([place.lat, place.lng], selectedZoom(place), { animate: true });
       return;
     }
     map.setView(defaultCenter, 3, { animate: true });
   }, [map, place]);
 
   return null;
+}
+
+function selectedZoom(place: PlaceSuggestion) {
+  if (place.fcode === 'PCLI') return 5;
+  if (place.fcode.startsWith('ADM')) return 8;
+  if (place.fcl === 'P') return 12;
+  return 15;
 }
 
 function filterAirports(airports: Airport[], place: PlaceSuggestion | null) {

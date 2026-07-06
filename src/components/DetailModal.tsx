@@ -68,7 +68,7 @@ export function DetailModal({ mode, onClose }: DetailModalProps) {
   return (
     <motion.div
       animate={{ opacity: 1 }}
-      className="absolute inset-0 z-[2000] grid place-items-center bg-ink/55 px-4 backdrop-blur-md"
+      className="detail-backdrop absolute inset-0 z-[2000] grid place-items-center bg-ink/55 px-4 backdrop-blur-md"
       exit={{ opacity: 0 }}
       initial={{ opacity: 0 }}
       onMouseDown={onClose}
@@ -77,7 +77,7 @@ export function DetailModal({ mode, onClose }: DetailModalProps) {
       <motion.section
         animate={{ y: 0, opacity: 1 }}
         aria-labelledby="detail-modal-title"
-        className="glass-panel max-h-[86vh] w-[min(94vw,44rem)] overflow-hidden text-ink"
+        className="detail-dialog glass-panel max-h-[86vh] w-[min(94vw,44rem)] overflow-hidden text-ink"
         exit={{ y: 16, opacity: 0 }}
         initial={{ y: 16, opacity: 0 }}
         onMouseDown={(event) => event.stopPropagation()}
@@ -85,7 +85,7 @@ export function DetailModal({ mode, onClose }: DetailModalProps) {
         ref={dialogRef}
         role="dialog"
       >
-        <header className="flex items-center justify-between gap-4 border-b border-slate-200/80 bg-slate-50/92 px-5 py-4">
+        <header className="detail-header flex items-center justify-between gap-4 border-b border-slate-200/80 bg-slate-50/92 px-5 py-4">
           <div className="min-w-0">
             <p className="ui-section-title text-teal">{title}</p>
             <h2 className="truncate text-lg font-semibold" id="detail-modal-title">
@@ -107,7 +107,7 @@ export function DetailModal({ mode, onClose }: DetailModalProps) {
           </button>
         </header>
 
-        <div className="modal-scroll max-h-[70vh] overflow-y-auto p-5">
+        <div className="detail-body modal-scroll max-h-[70vh] overflow-y-auto p-5">
           {mode === 'place' ? <PlaceDetails /> : null}
           {mode === 'currency' ? <CurrencyDetails /> : null}
           {mode === 'weather' ? <WeatherDetails /> : null}

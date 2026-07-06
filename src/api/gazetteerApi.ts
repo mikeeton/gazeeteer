@@ -37,6 +37,11 @@ export async function searchPlaces(query: string): Promise<PlaceSuggestion[]> {
   return z.array(suggestionSchema).parse(data.geonames ?? []);
 }
 
+export async function reversePlace(lat: number, lng: number): Promise<PlaceSuggestion> {
+  const { data } = await apiClient.get('/reverse-place', { params: { lat, lng } });
+  return suggestionSchema.parse(data.place);
+}
+
 export async function getCountryInfo(code: string): Promise<CountryInfo> {
   const { data } = await apiClient.get<CountryInfo>(`/countries/${code}`);
   return data;
