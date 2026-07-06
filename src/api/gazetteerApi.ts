@@ -22,6 +22,8 @@ const suggestionSchema = z.object({
   lng: z.coerce.number(),
   countryName: z.string().default(''),
   countryCode: z.string().default(''),
+  adminName1: z.string().optional(),
+  adminName2: z.string().optional(),
   fcode: z.string(),
   fcl: z.string().optional(),
   fclName: z.string().optional(),

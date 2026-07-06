@@ -40,51 +40,33 @@ app.get('/api/places', async (req, res) => {
     const username = requireEnv('GEONAMES_USER');
     const responses = await cached(`places:${q.toLowerCase()}`, 1000 * 60 * 10, () =>
       Promise.all(
-      ['A', 'P', 'S', 'T', 'H', 'L', 'R', 'V', 'U'].map((featureClass) => {
-        const params = new URLSearchParams({
-          q,
-          maxRows: '12',
-          orderby: 'relevance',
-          style: 'FULL',
-          username,
-        });
-        params.append('featureClass', featureClass);
-        return fetchJson(`https://secure.geonames.org/searchJSON?${params.toString()}`).catch(() => ({
-          geonames: [],
-        }));
-      }),
+        ['A', 'P', 'S', 'T', 'H', 'L', 'R', 'V', 'U'].map((featureClass) => {
+          const params = new URLSearchParams({
+            q,
+            maxRows: '12',
+            orderby: 'relevance',
+            style: 'FULL',
+            username,
+          });
+          params.append('featureClass', featureClass);
+          return fetchJson(`https://secure.geonames.org/searchJSON?${params.toString()}`).catch(() => ({
+            geonames: [],
+          }));
+        }),
       ),
     );
 
     const seen = new Set();
-    const geonames = responses
+    const candidates = responses
       .flatMap((data) => data.geonames ?? [])
-      .map((place) => ({
-        name: place.name,
-        lat: Number(place.lat),
-        lng: Number(place.lng),
-        countryName: place.countryName ?? '',
-        countryCode: place.countryCode ?? '',
-        fcode: place.fcode,
-        fcl: place.fcl ?? '',
-        fclName: place.fclName ?? '',
-        geonameId: place.geonameId ?? null,
-        wikipediaUrl: place.wikipediaURL ?? '',
-        population: Number(place.population ?? 0),
-      }))
+      .map(normalizePlace)
       .filter((place) => {
         const key = `${place.geonameId}-${place.name}-${place.countryCode}`;
         if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng) || seen.has(key)) return false;
         seen.add(key);
         return true;
       })
-      .sort(
-        (a, b) =>
-          relevanceRank(q, a) - relevanceRank(q, b) ||
-          featureRank(a.fcode, a.fcl) - featureRank(b.fcode, b.fcl) ||
-          b.population - a.population,
-      )
-      .slice(0, 40);
+    const geonames = rankPlaceSearchResults(q, candidates).slice(0, 40);
 
     res.json({ geonames });
   } catch (error) {
@@ -662,24 +644,181 @@ function humanize(value) {
   return value.replace(/_/g, ' ').replace(/^\w/, (letter) => letter.toUpperCase());
 }
 
-function featureRank(fcode, fcl) {
-  if (fcode === 'PCLI') return 0;
-  if (fcode === 'ADM1') return 1;
-  if (fcode === 'ADM2') return 2;
-  if (fcl === 'P') return 3;
-  if (fcl === 'S') return 4;
-  if (fcl === 'T') return 5;
-  if (fcl === 'H') return 6;
-  return 7;
+export function normalizePlace(place) {
+  return {
+    name: place.name,
+    lat: Number(place.lat),
+    lng: Number(place.lng),
+    countryName: place.countryName ?? '',
+    countryCode: place.countryCode ?? '',
+    adminName1: place.adminName1 ?? '',
+    adminName2: place.adminName2 ?? '',
+    fcode: place.fcode,
+    fcl: place.fcl ?? '',
+    fclName: place.fclName ?? '',
+    geonameId: place.geonameId ?? null,
+    wikipediaUrl: place.wikipediaURL ?? place.wikipediaUrl ?? '',
+    population: Number(place.population ?? 0),
+    alternateNames: normalizeAlternateNames(place.alternateNames),
+  };
 }
 
-function relevanceRank(query, place) {
-  const normalizedQuery = query.trim().toLowerCase();
-  const normalizedName = String(place.name ?? '').trim().toLowerCase();
-  if (normalizedName === normalizedQuery) return 0;
-  if (normalizedName.startsWith(normalizedQuery)) return 1;
-  if (normalizedName.includes(normalizedQuery)) return 2;
-  return 3;
+function featureRank(fcode, fcl) {
+  if (fcode === 'PCLI') return 0;
+  if (fcode === 'PPLC') return 1;
+  if (['PPLA', 'PPLA2', 'PPLA3', 'PPLA4'].includes(fcode)) return 2;
+  if (['PPL', 'PPLX', 'PPLL', 'PPLF'].includes(fcode)) return 3;
+  if (fcode === 'ADM1') return 4;
+  if (fcode === 'ADM2') return 5;
+  if (fcl === 'T') return 6;
+  if (fcl === 'S') return 7;
+  if (fcl === 'H') return 8;
+  if (fcl === 'P') return 9;
+  return 10;
+}
+
+export function relevanceRank(query, place) {
+  const normalizedQuery = normalizeSearchText(query);
+  const compactQuery = compactSearchText(normalizedQuery);
+  const names = searchNames(place);
+  const isShortQuery = normalizedQuery.length <= 3;
+  const rank = Math.min(
+    ...names.map((name, index) => {
+      const compactName = compactSearchText(name);
+      const sourcePenalty = index === 0 ? 0 : 0.15;
+
+      if (name === normalizedQuery || compactName === compactQuery) return sourcePenalty;
+      if (name.startsWith(`${normalizedQuery} `)) return 1 + sourcePenalty;
+      if (!isShortQuery && hasWordPrefix(name, normalizedQuery)) return 2 + sourcePenalty;
+      if (!isShortQuery && hasWordMatch(name, normalizedQuery)) return 3 + sourcePenalty;
+      return 8 + sourcePenalty;
+    }),
+  );
+
+  return rank + featureSpecificPenalty(normalizedQuery, place);
+}
+
+export function comparePlaceSearchResults(query, a, b) {
+  return (
+    relevanceRank(query, a) - relevanceRank(query, b) ||
+    entityRank(a.fcode, a.fcl) - entityRank(b.fcode, b.fcl) ||
+    populationRank(b.population) - populationRank(a.population) ||
+    featureRank(a.fcode, a.fcl) - featureRank(b.fcode, b.fcl) ||
+    String(a.name).localeCompare(String(b.name))
+  );
+}
+
+export function rankPlaceSearchResults(query, places) {
+  const candidates = places
+    .filter((place) => relevanceRank(query, place) < 8)
+    .sort((a, b) => comparePlaceSearchResults(query, a, b));
+  const strongMatches = candidates.filter((place) => primaryRelevanceRank(query, place) < 3);
+  return strongMatches.length >= 3 ? strongMatches : candidates;
+}
+
+function featureSpecificPenalty(normalizedQuery, place) {
+  if (place.fcode === 'PCLI') return 0;
+  if (place.fcl === 'P') {
+    const exactTinySettlement =
+      normalizeSearchText(place.name) === normalizedQuery && Number(place.population ?? 0) < 1000;
+    return exactTinySettlement ? 0.85 : 0;
+  }
+  if (place.fcl === 'A' && [place.name, place.adminName1, place.adminName2].some((value) => normalizeSearchText(value) === normalizedQuery)) {
+    return 0.2;
+  }
+  if (place.fcl === 'L') return 0.4;
+  if (place.fcl === 'T') return 0.55;
+  if (['S', 'H', 'R'].includes(place.fcl)) return 0.75;
+  return 0.8;
+}
+
+function entityRank(fcode, fcl) {
+  if (fcode === 'PCLI') return 0;
+  if (fcode === 'PPLC') return 1;
+  if (fcl === 'P') return 2;
+  if (fcl === 'A') return 3;
+  if (fcl === 'T') return 4;
+  if (['S', 'H'].includes(fcl)) return 5;
+  return 5;
+}
+
+function searchNames(place) {
+  const names = [
+    place.name,
+    place.asciiName,
+    place.toponymName,
+    place.countryName,
+    place.adminName1,
+    place.adminName2,
+    ...(place.alternateNames ?? []),
+  ];
+  return [...names, ...names.map(stripGeographicDescriptor)]
+    .map(normalizeSearchText)
+    .filter(Boolean)
+    .filter((value, index, all) => all.indexOf(value) === index);
+}
+
+function primaryRelevanceRank(query, place) {
+  const normalizedQuery = normalizeSearchText(query);
+  return Math.min(
+    textRelevance(normalizeSearchText(place.name), normalizedQuery),
+    textRelevance(normalizeSearchText(stripGeographicDescriptor(place.name)), normalizedQuery),
+  );
+}
+
+function textRelevance(name, query) {
+  if (name === query || compactSearchText(name) === compactSearchText(query)) return 0;
+  if (name.startsWith(`${query} `)) return 1;
+  if (query.length > 3 && hasWordPrefix(name, query)) return 2;
+  if (query.length > 3 && hasWordMatch(name, query)) return 3;
+  return 8;
+}
+
+function stripGeographicDescriptor(value) {
+  return String(value ?? '').replace(
+    /^(mount|mt|mont|monte|lake|river|rio|río|isle|island|cape|point|peak|saint|st)\.?\s+/i,
+    '',
+  );
+}
+
+function normalizeAlternateNames(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item : item?.name ?? item?.alternateName ?? ''))
+      .filter(Boolean);
+  }
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeSearchText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/['’`]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function compactSearchText(value) {
+  return value.replace(/\s+/g, '');
+}
+
+function hasWordPrefix(value, query) {
+  return value.split(' ').some((word) => word.startsWith(query) && word.length - query.length >= 2);
+}
+
+function hasWordMatch(value, query) {
+  return value.split(' ').includes(query);
+}
+
+function populationRank(population) {
+  return Math.log10(Math.max(0, population) + 1);
 }
 
 const overpassSelectors = {

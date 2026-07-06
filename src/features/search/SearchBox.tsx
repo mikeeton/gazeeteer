@@ -46,7 +46,7 @@ export function SearchBox() {
           aria-autocomplete="list"
           aria-controls={listId}
           aria-expanded={isOpen}
-          className="h-12 w-full rounded-md border border-white/70 bg-white/95 pl-12 pr-12 text-sm font-semibold text-ink shadow-panel outline-none backdrop-blur transition placeholder:text-slate-400 focus:border-teal focus:ring-4 focus:ring-teal/20"
+          className="h-12 w-full rounded-md border border-white/70 bg-white pl-12 pr-12 text-sm font-semibold text-ink shadow-panel outline-none transition placeholder:text-slate-400 focus:border-teal focus:ring-4 focus:ring-teal/20"
           onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -107,16 +107,18 @@ export function SearchBox() {
                   onMouseEnter={() => setActiveIndex(index)}
                   type="button"
                 >
-                  <span>
-                    <span className="block text-sm font-semibold text-white">{place.name}</span>
-                    <span className="text-xs text-slate-300">
-                      {[place.countryName, place.population ? `${place.population.toLocaleString()} people` : '']
-                        .filter(Boolean)
-                        .join(' · ')}
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-white">{place.name}</span>
+                    <span className="mt-0.5 block truncate text-xs text-slate-300">
+                      {placeLocationLabel(place)}
+                    </span>
+                    <span className="mt-1 block text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                      {coordinateLabel(place)}
+                      {place.population ? ` · ${formatCompact(place.population)} people` : ''}
                     </span>
                   </span>
                   <span className="shrink-0 rounded-md bg-gold/10 px-2 py-1 text-xs font-bold text-gold">
-                    {featureTypes[place.fcode] ?? place.fclName ?? featureClasses[place.fcl ?? ''] ?? place.fcode}
+                    {featureLabel(place)}
                   </span>
                 </button>
               </li>
@@ -126,4 +128,27 @@ export function SearchBox() {
       </div>
     </section>
   );
+}
+
+function featureLabel(place: { fcode: string; fcl?: string; fclName?: string }) {
+  return featureTypes[place.fcode] ?? place.fclName ?? featureClasses[place.fcl ?? ''] ?? place.fcode;
+}
+
+function placeLocationLabel(place: {
+  adminName1?: string;
+  adminName2?: string;
+  countryName: string;
+  countryCode: string;
+}) {
+  return [place.adminName2, place.adminName1, place.countryName || place.countryCode].filter(Boolean).join(', ');
+}
+
+function coordinateLabel(place: { lat: number; lng: number }) {
+  const lat = `${Math.abs(place.lat).toFixed(3)}${place.lat >= 0 ? 'N' : 'S'}`;
+  const lng = `${Math.abs(place.lng).toFixed(3)}${place.lng >= 0 ? 'E' : 'W'}`;
+  return `${lat}, ${lng}`;
+}
+
+function formatCompact(value: number) {
+  return Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 }

@@ -6,6 +6,8 @@ export type PlaceSuggestion = {
   lng: number;
   countryName: string;
   countryCode: string;
+  adminName1?: string;
+  adminName2?: string;
   fcode: FeatureCode;
   fcl?: string;
   fclName?: string;

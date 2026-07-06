@@ -31,7 +31,7 @@ export function ExplorerPanel() {
   return (
     <aside className="explorer-panel glass-panel absolute bottom-4 left-4 z-[1000] w-[min(94vw,28rem)] overflow-hidden text-ink dark-panel">
       <nav
-        className="grid grid-cols-7 border-b border-slate-200/80 bg-slate-50/90 p-1"
+        className="explorer-tabs grid grid-cols-7 border-b border-slate-200/80 bg-slate-50/90 p-1"
         aria-label="Explorer tools"
       >
         <TabButton
@@ -104,7 +104,7 @@ function TabButton({
 }) {
   return (
     <button
-      className={`grid h-12 place-items-center rounded-md text-xs font-bold transition ${
+      className={`grid h-12 min-w-0 place-items-center rounded-md text-xs font-bold transition ${
         active
           ? 'bg-white text-teal shadow-sm ring-1 ring-slate-200/70'
           : 'text-slate-500 hover:bg-white/70 hover:text-ink'
@@ -113,7 +113,7 @@ function TabButton({
       type="button"
     >
       <Icon className="size-4" />
-      {label}
+      <span className="max-w-full truncate">{label}</span>
     </button>
   );
 }
