@@ -16,7 +16,11 @@ API:      http://localhost:3001
 Health:   http://localhost:3001/api/health
 ```
 
-Live demo: pending deployment after API key rotation.
+Live demo:
+
+```text
+https://gazetteer-qsrf.onrender.com
+```
 
 ## Preview
 
@@ -193,7 +197,7 @@ This repository includes `render.yaml`.
    ```
 
 4. Deploy the service.
-5. Replace the pending live demo note in this README with the deployed URL.
+5. Verify `/api/health` and the public app URL after the first deploy.
 
 ### Docker
 
