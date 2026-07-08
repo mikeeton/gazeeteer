@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Banknote, CloudSun, Globe2, Loader2, X } from 'lucide-react';
+import { Banknote, CloudRain, CloudSun, Droplets, Globe2, Gauge, Loader2, SunMedium, Sunrise, Sunset, Thermometer, Wind, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -191,19 +191,40 @@ function WeatherDetails() {
   if (isLoading) return <LoadingState label="Loading weather" />;
   if (isError || !data) return <ErrorState label="Weather could not be loaded." />;
 
+  const aqi = data.air_quality;
+
   return (
-    <div className="grid gap-5">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Metric icon={CloudSun} label="Condition" value={data.condition.text} />
-        <Metric label="Temperature" value={`${data.temp_c} C`} />
-        <Metric label="Feels like" value={data.feelslike_c ? `${data.feelslike_c} C` : 'Unavailable'} />
-        <Metric label="Humidity" value={`${data.humidity}%`} />
-        <Metric label="Wind" value={data.wind_kph ? `${data.wind_kph} kph` : 'Unavailable'} />
-        <Metric label="UV index" value={data.uv !== undefined && data.uv !== null ? `${data.uv}` : 'Unavailable'} />
-        <Metric label="Sunrise" value={data.astro.sunrise} />
-        <Metric label="Sunset" value={data.astro.sunset} />
-        <Metric label="Source" value={data.source ?? 'Weather provider'} />
+    <div className="weather-content">
+      <section className="weather-hero">
+        <CloudSun className="size-9" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="ui-section-title">Live conditions</p>
+          <h3>{data.condition.text}</h3>
+          <p>
+            Weather at {selectedPlace.name} · {selectedPlace.lat.toFixed(3)}, {selectedPlace.lng.toFixed(3)}
+          </p>
+        </div>
+        <strong>{formatTemperature(data.temp_c)}</strong>
+      </section>
+      <div className="weather-metric-grid">
+        <Metric icon={Thermometer} label="Feels like" value={formatOptionalTemperature(data.feelslike_c)} />
+        <Metric icon={Droplets} label="Humidity" value={`${data.humidity}%`} />
+        <Metric icon={Wind} label="Wind" value={formatOptionalNumber(data.wind_kph, 'kph')} />
+        <Metric icon={SunMedium} label="UV index" value={data.uv !== undefined && data.uv !== null ? `${data.uv}` : 'Unavailable'} />
+        <Metric icon={Sunrise} label="Sunrise" value={data.astro.sunrise} />
+        <Metric icon={Sunset} label="Sunset" value={data.astro.sunset} />
+        <Metric icon={Globe2} label="Source" value={data.source ?? 'Weather provider'} />
       </div>
+      {aqi ? (
+        <div className="grid gap-3">
+          <SectionTitle eyebrow="Air quality" title={formatAqi(aqi.us_aqi)} />
+          <div className="weather-metric-grid weather-metric-grid-compact">
+            <Metric icon={Gauge} label="US AQI" value={formatAqi(aqi.us_aqi)} />
+            <Metric icon={CloudSun} label="PM2.5" value={formatOptionalNumber(aqi.pm2_5, 'µg/m³')} />
+            <Metric icon={CloudSun} label="PM10" value={formatOptionalNumber(aqi.pm10, 'µg/m³')} />
+          </div>
+        </div>
+      ) : null}
       {data.hourly?.length ? <HourlyWeatherCharts hourly={data.hourly} /> : null}
     </div>
   );
@@ -224,32 +245,80 @@ function ForecastDetails() {
     max: day.day.maxtemp_c,
     min: day.day.mintemp_c,
   }));
+  const chartTemperatures = chartData.flatMap((day) => [day.max, day.min]);
+  const chartMin = Math.floor(Math.min(...chartTemperatures) - 2);
+  const chartMax = Math.ceil(Math.max(...chartTemperatures) + 2);
 
   return (
-    <div className="grid gap-5">
-      <div className="ui-card h-56 p-3">
+    <div className="forecast-content">
+      <section className="forecast-header">
+        <div>
+          <p className="ui-section-title">3-day forecast</p>
+          <h3>{selectedPlace.name}</h3>
+          <p>
+            Highs, lows, rain chance, and UV from {data.source ?? 'weather provider'}.
+          </p>
+        </div>
+        <CloudSun className="size-8" aria-hidden="true" />
+      </section>
+      <div className="weather-chart-card forecast-trend-card">
+        <SectionTitle eyebrow="Temperature trend" title="High and low" />
+        <div className="weather-chart-frame">
         <ResponsiveContainer height="100%" width="100%">
-          <AreaChart data={chartData} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
-            <XAxis dataKey="date" />
-            <YAxis />
+          <AreaChart data={chartData} margin={{ left: -10, right: 10, top: 8, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+            <YAxis domain={[chartMin, chartMax]} tick={{ fontSize: 12 }} width={34} />
             <Tooltip />
-            <Area dataKey="max" fill="#e76f51" fillOpacity={0.24} stroke="#e76f51" type="monotone" />
-            <Area dataKey="min" fill="#0f8b8d" fillOpacity={0.18} stroke="#0f8b8d" type="monotone" />
+            <Area
+              dataKey="max"
+              dot={{ r: 3 }}
+              fill="#e76f51"
+              fillOpacity={0.24}
+              isAnimationActive={false}
+              stroke="#e76f51"
+              strokeWidth={3}
+              type="monotone"
+            />
+            <Area
+              dataKey="min"
+              dot={{ r: 3 }}
+              fill="#0f8b8d"
+              fillOpacity={0.18}
+              isAnimationActive={false}
+              stroke="#0f8b8d"
+              strokeWidth={3}
+              type="monotone"
+            />
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="forecast-card-grid">
         {data.forecast.forecastday.map((day) => (
-          <article className="ui-card p-4" key={day.date}>
-            <h3 className="font-semibold">{new Date(day.date).toLocaleDateString(undefined, { weekday: 'long' })}</h3>
-            {day.day.condition.icon ? (
-              <img alt="" className="my-2 h-12 w-12" src={`https:${day.day.condition.icon}`} />
-            ) : null}
-            <p className="text-sm text-slate-600">{day.day.condition.text}</p>
-            <p className="mt-2 text-sm">High {day.day.maxtemp_c} C</p>
-            <p className="text-sm">Low {day.day.mintemp_c} C</p>
-            <p className="text-sm">Rain {day.day.daily_chance_of_rain}%</p>
-            {day.day.uv !== undefined && day.day.uv !== null ? <p className="text-sm">UV {day.day.uv}</p> : null}
+          <article className="forecast-card" key={day.date}>
+            <div className="forecast-card-top">
+              <div>
+                <h3>{dayName(day.date)}</h3>
+                <p>{dateShort(day.date)}</p>
+              </div>
+              {day.day.condition.icon ? (
+                <img alt="" src={`https:${day.day.condition.icon}`} />
+              ) : (
+                <CloudSun className="size-9" aria-hidden="true" />
+              )}
+            </div>
+            <p className="forecast-condition">{day.day.condition.text}</p>
+            <div className="forecast-temps">
+              <strong>{formatTemperature(day.day.maxtemp_c)}</strong>
+              <span>{formatTemperature(day.day.mintemp_c)}</span>
+            </div>
+            <dl>
+              <MiniMetric icon={CloudRain} label="Rain" value={`${day.day.daily_chance_of_rain}%`} />
+              {day.day.uv !== undefined && day.day.uv !== null ? (
+                <MiniMetric icon={SunMedium} label="UV" value={`${day.day.uv}`} />
+              ) : null}
+            </dl>
           </article>
         ))}
       </div>
@@ -272,9 +341,11 @@ function HourlyWeatherCharts({
 
   return (
     <div className="grid gap-4">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Hourly outlook</h3>
+      <SectionTitle eyebrow="Hourly outlook" title="Temperature, wind, rain, and UV" />
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="ui-card h-52 p-3">
+        <div className="weather-chart-card">
+          <SectionTitle eyebrow="Temp and wind" title="Next 24 hours" />
+          <div className="weather-chart-frame">
           <ResponsiveContainer height="100%" width="100%">
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -285,8 +356,11 @@ function HourlyWeatherCharts({
               <Line dataKey="wind" dot={false} stroke="#0f8b8d" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </div>
-        <div className="ui-card h-52 p-3">
+        <div className="weather-chart-card">
+          <SectionTitle eyebrow="Rain and UV" title="Hourly risk" />
+          <div className="weather-chart-frame">
           <ResponsiveContainer height="100%" width="100%">
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -297,8 +371,38 @@ function HourlyWeatherCharts({
               <Bar dataKey="uv" fill="#f4a261" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div className="weather-section-title">
+      <p className="ui-section-title">{eyebrow}</p>
+      <h3>{title}</h3>
+    </div>
+  );
+}
+
+function MiniMetric({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof CloudSun;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div>
+      <dt>
+        <Icon className="size-3.5" aria-hidden="true" />
+        {label}
+      </dt>
+      <dd>{value}</dd>
     </div>
   );
 }
@@ -332,6 +436,32 @@ function Metric({
       <p className="mt-1 break-words text-lg font-semibold">{value}</p>
     </article>
   );
+}
+
+function formatTemperature(value: number) {
+  return `${Math.round(value)}°C`;
+}
+
+function formatOptionalTemperature(value?: number | null) {
+  return value === undefined || value === null ? 'Unavailable' : formatTemperature(value);
+}
+
+function formatOptionalNumber(value: number | null | undefined, unit: string) {
+  return value === undefined || value === null ? 'Unavailable' : `${Number(value).toLocaleString()} ${unit}`;
+}
+
+function formatAqi(value: number | null | undefined) {
+  if (value === undefined || value === null) return 'Unavailable';
+  const label = value <= 50 ? 'Good' : value <= 100 ? 'Moderate' : value <= 150 ? 'Unhealthy for sensitive groups' : 'Unhealthy';
+  return `${value} · ${label}`;
+}
+
+function dayName(value: string) {
+  return new Date(value).toLocaleDateString(undefined, { weekday: 'long' });
+}
+
+function dateShort(value: string) {
+  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function LoadingState({ label }: { label: string }) {

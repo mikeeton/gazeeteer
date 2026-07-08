@@ -477,7 +477,10 @@ async function getOpenMeteoWeather(lat, lng, days) {
     timezone: 'auto',
     forecast_days: String(days),
   });
-  const data = await fetchJson(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+  const [data, airQuality] = await Promise.all([
+    fetchJson(`https://api.open-meteo.com/v1/forecast?${params.toString()}`),
+    getOpenMeteoAirQuality(lat, lng),
+  ]);
   const forecastday = data.daily.time.map((date, index) => ({
     date,
     astro: {
@@ -507,7 +510,7 @@ async function getOpenMeteoWeather(lat, lng, days) {
     humidity: data.current.relative_humidity_2m,
     wind_kph: data.current.wind_speed_10m,
     uv: data.daily.uv_index_max?.[0] ?? null,
-    air_quality: null,
+    air_quality: airQuality,
     astro: forecastday[0]?.astro ?? { sunrise: 'Unavailable', sunset: 'Unavailable' },
     forecast: { forecastday },
     hourly: (data.hourly?.time ?? []).slice(0, 24).map((time, index) => ({
@@ -519,6 +522,31 @@ async function getOpenMeteoWeather(lat, lng, days) {
       uv: data.hourly.uv_index?.[index] ?? null,
     })),
   };
+}
+
+async function getOpenMeteoAirQuality(lat, lng) {
+  try {
+    const params = new URLSearchParams({
+      latitude: String(lat),
+      longitude: String(lng),
+      current: 'european_aqi,us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone',
+      timezone: 'auto',
+    });
+    const data = await fetchJson(`https://air-quality-api.open-meteo.com/v1/air-quality?${params.toString()}`);
+    return data.current
+      ? {
+          european_aqi: data.current.european_aqi ?? null,
+          us_aqi: data.current.us_aqi ?? null,
+          pm10: data.current.pm10 ?? null,
+          pm2_5: data.current.pm2_5 ?? null,
+          carbon_monoxide: data.current.carbon_monoxide ?? null,
+          nitrogen_dioxide: data.current.nitrogen_dioxide ?? null,
+          ozone: data.current.ozone ?? null,
+        }
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function weatherCodeLabel(code) {
@@ -542,6 +570,8 @@ function weatherCodeLabel(code) {
     81: 'Moderate rain showers',
     82: 'Violent rain showers',
     95: 'Thunderstorm',
+    96: 'Thunderstorm with hail',
+    99: 'Severe thunderstorm with hail',
   };
   return labels[code] ?? 'Variable conditions';
 }

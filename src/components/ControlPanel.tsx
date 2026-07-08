@@ -82,10 +82,6 @@ export function ControlPanel({ onOpenDetail }: ControlPanelProps) {
 
   const openDetail = (mode: DetailMode) => {
     if (!requirePlace()) return;
-    if ((mode === 'weather' || mode === 'forecast') && selectedPlace?.fcode === 'PCLI') {
-      toast.error('Weather data is available for regions, counties, and towns.');
-      return;
-    }
     onOpenDetail(mode);
   };
 

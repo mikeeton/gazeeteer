@@ -58,7 +58,7 @@ export type WeatherInfo = {
   humidity: number;
   wind_kph?: number;
   uv?: number;
-  air_quality?: Record<string, number> | null;
+  air_quality?: Record<string, number | null> | null;
   astro: { sunrise: string; sunset: string };
   forecast: {
     forecastday: Array<{
